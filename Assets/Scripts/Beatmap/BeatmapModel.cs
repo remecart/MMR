@@ -51,9 +51,6 @@ public abstract class BeatmapObject
 
     [JsonProperty("y", NullValueHandling = NullValueHandling.Ignore)]
     public int? Y { get; set; }
-    
-    [JsonProperty("customData", NullValueHandling = NullValueHandling.Ignore)]
-    public CustomData CustomData { get; set; }
 }
 
 [Serializable]
@@ -86,12 +83,14 @@ public class ColorNote : BeatmapObject
     public int Direction { get; set; }
     
     [JsonProperty("customData", NullValueHandling = NullValueHandling.Ignore)]
-    public new NoteCustomData CustomData { get; set; }
+    public NoteCustomData CustomData { get; set; }
 }
 
 [Serializable]
 public class BombNote : BeatmapObject
 {
+    [JsonProperty("customData", NullValueHandling = NullValueHandling.Ignore)]
+    public NoteCustomData CustomData { get; set; }
 }
 
 [Serializable]
@@ -107,7 +106,7 @@ public class Obstacle : BeatmapObject
     public int Width { get; set; }
     
     [JsonProperty("customData", NullValueHandling = NullValueHandling.Ignore)]
-    public new ObstacleCustomData CustomData { get; set; }
+    public ObstacleCustomData CustomData { get; set; }
 }
 
 [Serializable]
@@ -141,7 +140,7 @@ public class Slider : BeatmapObject
     public int Mode { get; set; }
     
     [JsonProperty("customData", NullValueHandling = NullValueHandling.Ignore)]
-    public new SliderCustomData CustomData { get; set; }
+    public SliderCustomData CustomData { get; set; }
 }
 
 [Serializable]
