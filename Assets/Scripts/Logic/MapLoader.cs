@@ -1,12 +1,16 @@
 using System.IO;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
 public sealed class MapLoader : MonoBehaviour
 {
+    [CanBeNull]
     private V3Info _beatmap;
-    
+
+    public V3Info Beatmap => _beatmap ?? throw new MapNotLoadedException();
+
     public void LoadMap(string path)
     {
         _beatmap = LoadBeatmap(path);
@@ -16,7 +20,7 @@ public sealed class MapLoader : MonoBehaviour
     {
         var rawJson = File.ReadAllText(path);
         _beatmap = JsonConvert.DeserializeObject<V3Info>(rawJson);
-        
+
         return _beatmap;
     }
 }
@@ -24,15 +28,16 @@ public sealed class MapLoader : MonoBehaviour
 [CustomEditor(typeof(MapLoader)), System.Serializable]
 public class MapLoaderInterface : Editor
 {
-    private string _path = @"C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\35204 (SAITAMA 2000 - SpookyBeard)\ExpertPlusStandard.dat"; // temporary hardcode
-    
+    private string _path =
+        @"C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\35204 (SAITAMA 2000 - SpookyBeard)\ExpertPlusStandard.dat"; // temporary hardcode
+
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
-        
+
         EditorGUILayout.LabelField("Enter Beatmap Path:");
-        _path = EditorGUILayout.TextField(_path); // Proper persistent input field
-        
+        _path = EditorGUILayout.TextField(_path);
+
         var script = target as MapLoader;
 
         if (GUILayout.Button("Load Map"))
