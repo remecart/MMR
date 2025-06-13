@@ -12,5 +12,16 @@ public class RootLifetimeScope : LifetimeScope
             .Where(x => x.GetComponent<LifetimeScope>() == null)
             .Where(x => x.GetComponents<MonoBehaviour>().Length > 0)
             .ToList();
+
+        var configLoader = new ConfigLoader();
+        builder.RegisterInstance(configLoader)
+            .AsSelf()
+            .AsImplementedInterfaces();
+
+        foreach (var config in configLoader.GetAll())
+        {
+            builder.RegisterInstance(config)
+                .AsSelf();
+        }
     }
 }
