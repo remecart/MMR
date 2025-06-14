@@ -4,6 +4,7 @@ using UnityEngine;
 public class NoteColorConfig : IConfig
 {
     public Color LeftColor { get; set; } = Color.red;
+
     public Color RightColor { get; set; } = Color.blue;
 
     public override string ToString()

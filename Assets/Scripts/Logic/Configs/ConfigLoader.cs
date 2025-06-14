@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
+using UnityEngine;
 
 public class ConfigLoader
 {
@@ -17,12 +18,15 @@ public class ConfigLoader
             new Vector3Converter(),
             new Vector4Converter(),
             new QuaternionConverter(),
+            new KeyCodeConverter()
         },
         ReferenceLoopHandling = ReferenceLoopHandling.Ignore
     };
 
     private readonly string _configPath;
     private readonly Dictionary<Type, IConfig> _loadedConfigs = new Dictionary<Type, IConfig>();
+    private readonly Dictionary<Type, string> _originalConfigs = new Dictionary<Type, string>();
+
 
     public ConfigLoader()
     {
@@ -40,12 +44,122 @@ public class ConfigLoader
         LoadAllConfigs();
     }
 
+
     public T Get<T>() where T : class, IConfig
     {
         return _loadedConfigs.TryGetValue(typeof(T), out var config) ? config as T : null;
     }
 
     public IEnumerable<IConfig> GetAll() => _loadedConfigs.Values;
+
+    public bool IsChanged<T>() where T : class, IConfig
+    {
+        var type = typeof(T);
+        if (!_loadedConfigs.TryGetValue(type, out var config) || !_originalConfigs.TryGetValue(type, out var originalJson))
+        {
+            return false;
+        }
+
+        var currentJson = JsonConvert.SerializeObject(config, Formatting.Indented);
+        return !string.Equals(currentJson, originalJson, StringComparison.Ordinal);
+    }
+
+    public bool IsChanged(Type type)
+    {
+        if (!typeof(IConfig).IsAssignableFrom(type))
+        {
+            return false;
+        }
+
+        if (!_loadedConfigs.TryGetValue(type, out var config) || !_originalConfigs.TryGetValue(type, out var originalJson))
+        {
+            return false;
+        }
+
+        var currentJson = JsonConvert.SerializeObject(config, Formatting.Indented);
+        return !string.Equals(currentJson, originalJson, StringComparison.Ordinal);
+    }
+
+
+    public void SaveChanges<T>() where T : class, IConfig
+    {
+        var type = typeof(T);
+        if (!_loadedConfigs.TryGetValue(type, out var config))
+        {
+            return;
+        }
+
+        var attr = type.GetCustomAttribute<ConfigFileNameAttribute>();
+        if (attr == null)
+        {
+            return;
+        }
+
+        var filePath = Path.Combine(_configPath, attr.FileName);
+
+        var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+
+        File.WriteAllText(filePath, json);
+        _originalConfigs[type] = json;
+    }
+
+    public void SaveChanges(Type type)
+    {
+        if (!typeof(IConfig).IsAssignableFrom(type))
+        {
+            throw new ArgumentException("Type must implement IConfig", nameof(type));
+        }
+
+        if (!_loadedConfigs.TryGetValue(type, out var config))
+        {
+            return;
+        }
+
+        var attr = type.GetCustomAttribute<ConfigFileNameAttribute>();
+        if (attr == null)
+        {
+            return;
+        }
+
+        var filePath = Path.Combine(_configPath, attr.FileName);
+
+        var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+
+        File.WriteAllText(filePath, json);
+        _originalConfigs[type] = json;
+    }
+
+    public void RevertChanges<T>() where T : class, IConfig
+    {
+        var type = typeof(T);
+        if (!_originalConfigs.TryGetValue(type, out var originalJson))
+        {
+            return;
+        }
+
+        if (JsonConvert.DeserializeObject(originalJson, type) is IConfig config)
+        {
+            _loadedConfigs[type] = config;
+        }
+    }
+
+    public void RevertChanges(Type type)
+    {
+        if (!typeof(IConfig).IsAssignableFrom(type))
+        {
+            throw new ArgumentException("Type must implement IConfig", nameof(type));
+        }
+
+        if (!_originalConfigs.TryGetValue(type, out var originalJson))
+        {
+            return;
+        }
+
+        if (JsonConvert.DeserializeObject(originalJson, type) is IConfig config)
+        {
+            _loadedConfigs[type] = config;
+        }
+    }
 
     private void LoadAllConfigs()
     {
@@ -57,9 +171,7 @@ public class ConfigLoader
         {
             var attr = type.GetCustomAttribute<ConfigFileNameAttribute>();
             if (attr == null)
-            {
                 continue;
-            }
 
             var filePath = Path.Combine(_configPath, attr.FileName);
 
@@ -69,22 +181,25 @@ public class ConfigLoader
                 if (File.Exists(filePath))
                 {
                     var json = File.ReadAllText(filePath);
-                    config = (IConfig)JsonConvert.DeserializeObject(json, type);
+                    config = JsonConvert.DeserializeObject(json, type) as IConfig;
+                    if (config != null)
+                    {
+                        _loadedConfigs[type] = config;
+                        _originalConfigs[type] = JsonConvert.SerializeObject(config);
+                    }
                 }
-                else // Create new config if it doesn't exist
+                else
                 {
                     config = (IConfig)Activator.CreateInstance(type);
-                    File.WriteAllText(filePath, JsonConvert.SerializeObject(config, Formatting.Indented));
-                }
-
-                if (config != null)
-                {
+                    var json = JsonConvert.SerializeObject(config);
+                    File.WriteAllText(filePath, json);
                     _loadedConfigs[type] = config;
+                    _originalConfigs[type] = json;
                 }
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError($"Failed to load config {type.Name}: {e.Message}");
+                Debug.LogError($"Failed to load config {type.Name}: {e.Message}");
             }
         }
     }
