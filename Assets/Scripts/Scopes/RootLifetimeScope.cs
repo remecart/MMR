@@ -23,5 +23,8 @@ public class RootLifetimeScope : LifetimeScope
             builder.RegisterInstance(config)
                 .AsSelf();
         }
+
+        builder.Register<GuiSettingsGenerator>(Lifetime.Singleton)
+            .AsSelf();
     }
 }

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using ImGuiNET;
 using UImGui;
 using UnityEngine;
@@ -8,13 +11,14 @@ public class SettingsUI : MonoBehaviour
     [Inject]
     private readonly KeybindConfig _keybindConfig;
 
+    [Inject]
+    private readonly GuiSettingsGenerator _generator;
+
     private bool _isActive;
 
     private void Awake()
     {
         UImGuiUtility.Layout += OnLayout;
-        UImGuiUtility.OnInitialize += OnInitialize;
-        UImGuiUtility.OnDeinitialize += OnDeinitialize;
     }
 
     private void Start()
@@ -23,6 +27,8 @@ public class SettingsUI : MonoBehaviour
         {
             Debug.LogError("KeybindConfig is not injected. Please ensure it is set up in the VContainer configuration.");
         }
+
+        _isActive = true;
     }
 
     private void Update()
@@ -37,37 +43,16 @@ public class SettingsUI : MonoBehaviour
 
     private void OnLayout(UImGui.UImGui obj)
     {
-        // Unity Update method. 
-        // Your code belongs here! Like ImGui.Begin... etc.
         if (!_isActive)
         {
             return;
         }
 
-        if (ImGui.Begin("Settings"))
-        {
-            ImGui.Text("This is a settings window.");
-            if (ImGui.Button("Close"))
-            {
-                _isActive = false;
-            }
-        }
-    }
-
-    private void OnInitialize(UImGui.UImGui obj)
-    {
-        // runs after UImGui.OnEnable();
-    }
-
-    private void OnDeinitialize(UImGui.UImGui obj)
-    {
-        // runs after UImGui.OnDisable();
+        _generator.GenerateLayout();
     }
 
     private void OnDisable()
     {
         UImGuiUtility.Layout -= OnLayout;
-        UImGuiUtility.OnInitialize -= OnInitialize;
-        UImGuiUtility.OnDeinitialize -= OnDeinitialize;
     }
 }
