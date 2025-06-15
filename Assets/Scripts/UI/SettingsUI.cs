@@ -1,47 +1,54 @@
-using System.Collections;
-using System.Collections.Generic;
-using ImGuiNET;
 using UImGui;
 using UnityEngine;
+using VContainer;
 
 public class SettingsUI : MonoBehaviour
 {
+    [Inject]
+    private readonly KeybindConfig _keybindConfig;
+
+    [Inject]
+    private readonly GuiSettingsGenerator _generator;
+
+    private bool _isActive;
+
     private void Awake()
     {
         UImGuiUtility.Layout += OnLayout;
-        UImGuiUtility.OnInitialize += OnInitialize;
-        UImGuiUtility.OnDeinitialize += OnDeinitialize;
+    }
+
+    private void Start()
+    {
+        if (_keybindConfig == null)
+        {
+            Debug.LogError("KeybindConfig is not injected. Please ensure it is set up in the VContainer configuration.");
+        }
+
+        _isActive = true;
+    }
+
+    private void Update()
+    {
+        if (_keybindConfig
+            .ToggleSettings
+            .Active())
+        {
+            _isActive = !_isActive;
+        }
     }
 
     private void OnLayout(UImGui.UImGui obj)
     {
-        // Unity Update method. 
-        // Your code belongs here! Like ImGui.Begin... etc.
-
-        if (ImGui.Begin("Settings"))
+        if (!_isActive)
         {
-            ImGui.Text("This is a settings window.");
-            if (ImGui.Button("Close"))
-            {
-                ImGui.CloseCurrentPopup();
-            }
+            return;
         }
-    }
 
-    private void OnInitialize(UImGui.UImGui obj)
-    {
-        // runs after UImGui.OnEnable();
-    }
-
-    private void OnDeinitialize(UImGui.UImGui obj)
-    {
-        // runs after UImGui.OnDisable();
+        _generator.GenerateLayout();
     }
 
     private void OnDisable()
     {
         UImGuiUtility.Layout -= OnLayout;
-        UImGuiUtility.OnInitialize -= OnInitialize;
-        UImGuiUtility.OnDeinitialize -= OnDeinitialize;
     }
 }
