@@ -11,6 +11,9 @@ public class MapHandler : MonoBehaviour
     [Inject]
     private readonly KeybindConfig _keybindConfig;
 
+    [Inject]
+    private readonly MapObjects _mapObjects;
+
     private V3Info _beatmap;
     
     public Observable<float> CurrentBeat = new();
@@ -20,6 +23,8 @@ public class MapHandler : MonoBehaviour
     {
         _mapLoader.OnMapLoaded += OnMapLoaded;
         CurrentBeat.OnValueChanged += SpawnMapObjects;
+        
+        Debug.Log(_mapObjects == null);
     }
 
     private void Update()
