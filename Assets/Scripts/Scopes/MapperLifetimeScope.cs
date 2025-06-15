@@ -10,7 +10,6 @@ public class MapperLifetimeScope : LifetimeScope
     [SerializeField]
     private MapObjects _mapObjects;
 
-
     protected override void Configure(IContainerBuilder builder)
     {
         builder.RegisterInstance(_mapLoader);

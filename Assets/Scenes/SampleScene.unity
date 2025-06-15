@@ -750,7 +750,9 @@ MonoBehaviour:
   parentReference:
     TypeName: 
   autoRun: 1
-  autoInjectGameObjects: []
+  autoInjectGameObjects:
+  - {fileID: 281471559}
+  - {fileID: 7019173292984900720}
   _mapLoader: {fileID: 9126445719317506567}
   _mapObjects: {fileID: 281471560}
 --- !u!114 &9126445719317506567

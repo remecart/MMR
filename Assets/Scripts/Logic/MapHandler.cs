@@ -2,28 +2,37 @@ using System;
 using System.Linq;
 using UnityEngine;
 using VContainer;
+using VContainer.Unity;
 
 public class MapHandler : MonoBehaviour
 {
     [Inject]
-    private readonly MapLoader _mapLoader;
-    
-    [Inject]
-    private readonly KeybindConfig _keybindConfig;
+    private readonly LifetimeScope scope;
 
-    [Inject]
-    private readonly MapObjects _mapObjects;
+    [AwakeInject]
+    private MapLoader _mapLoader;
+
+    [AwakeInject]
+    private KeybindConfig _keybindConfig;
+
+    [AwakeInject]
+    private MapObjects _mapObjects;
 
     private V3Info _beatmap;
-    
-    public Observable<float> CurrentBeat = new();
+
+    public Observable<float> CurrentBeat = new Observable<float>();
     public float spawnOffset;
+
+    private void Awake()
+    {
+        AwakeInjector.InjectInto(this, scope);
+    }
 
     private void Start()
     {
         _mapLoader.OnMapLoaded += OnMapLoaded;
         CurrentBeat.OnValueChanged += SpawnMapObjects;
-        
+
         Debug.Log(_mapObjects == null);
     }
 
@@ -33,7 +42,7 @@ public class MapHandler : MonoBehaviour
         {
             CurrentBeat.Value++;
         }
-        
+
         if (_keybindConfig.StepBackwards.Active())
         {
             CurrentBeat.Value--;
