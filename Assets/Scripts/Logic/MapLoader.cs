@@ -14,7 +14,13 @@ public sealed class MapLoader : MonoBehaviour
     [CanBeNull]
     private V3Info _beatmap;
 
+    public Action<V3Info> OnMapLoaded;
     public V3Info Beatmap => _beatmap ?? throw new MapNotLoadedException();
+
+    public void Start()
+    {
+        LoadMap(@"C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\2d43e (Isolation - dogwater53)\ExpertPlusStandard.dat");
+    }
 
     public void LoadMap(string path)
     {
@@ -27,6 +33,7 @@ public sealed class MapLoader : MonoBehaviour
         }
 
         SortBeatmapObjectLists(_beatmap);
+        OnMapLoaded?.Invoke(_beatmap);
     }
 
     private void SortBeatmapObjectLists(object beatmap)
@@ -107,8 +114,7 @@ public sealed class MapLoader : MonoBehaviour
 [CustomEditor(typeof(MapLoader)), System.Serializable]
 public class MapLoaderInterface : Editor
 {
-    private string _path =
-        @"A:\BS Version Archive\BSManager\BSInstances\1.29.1\Beat Saber_Data\CustomLevels\40304 (Dune Eternal - Remec)\ExpertPlusStandard.dat"; // temporary hardcode
+    private string _path = @"C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\2d43e (Isolation - dogwater53)\ExpertPlusStandard.dat"; // temporary hardcode
 
     public override void OnInspectorGUI()
     {
