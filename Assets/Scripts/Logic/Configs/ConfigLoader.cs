@@ -171,7 +171,9 @@ public class ConfigLoader
         {
             var attr = type.GetCustomAttribute<ConfigFileNameAttribute>();
             if (attr == null)
+            {
                 continue;
+            }
 
             var filePath = Path.Combine(_configPath, attr.FileName);
 

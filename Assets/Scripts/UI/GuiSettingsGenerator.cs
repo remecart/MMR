@@ -58,6 +58,10 @@ public class GuiSettingsGenerator
     public void GenerateLayout()
     {
         ProvideStyle();
+        var windowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoTitleBar;
+
+        ImGui.Begin("Settings", windowFlags);
+
         if (!ImGui.BeginTabBar("ConfigTabs"))
         {
             return;
@@ -148,6 +152,7 @@ public class GuiSettingsGenerator
         }
 
         ImGui.EndTabBar();
+        ImGui.End();
     }
 
     private bool RenderFloat(string name, ref float value)
