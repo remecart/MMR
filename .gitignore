@@ -5,6 +5,9 @@
 # ImGui configuration file
 imgui.ini
 
+# Rider idea folder
+.idea/
+
 .utmp/
 /[Ll]ibrary/
 /[Tt]emp/
