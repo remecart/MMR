@@ -195,7 +195,9 @@ public class GuiSettingsGenerator
     }
 
     private bool _isRecordingKeybind;
-    private readonly List<KeyCode> _recordedKeys = new List<KeyCode>();
+
+    private readonly Dictionary<string, bool> _isRecordingKeybindMap = new Dictionary<string, bool>();
+    private readonly Dictionary<string, List<KeyCode>> _recordedKeysMap = new Dictionary<string, List<KeyCode>>();
 
     private bool RenderKeybind(string name, List<KeyCode> keyCodes)
     {
@@ -204,16 +206,23 @@ public class GuiSettingsGenerator
             return false;
         }
 
+        _isRecordingKeybindMap.TryAdd(name, false);
+
+        if (!_recordedKeysMap.ContainsKey(name))
+        {
+            _recordedKeysMap[name] = new List<KeyCode>();
+        }
+
         var changed = false;
         var keyString = string.Join(" + ", keyCodes);
         ImGui.Text($"Current: {keyString}");
 
-        if (!_isRecordingKeybind)
+        if (!_isRecordingKeybindMap[name])
         {
-            if (ImGui.Button("Record New Keybind"))
+            if (ImGui.Button($"Record New Keybind##{name}"))
             {
-                _isRecordingKeybind = true;
-                _recordedKeys.Clear();
+                _isRecordingKeybindMap[name] = true;
+                _recordedKeysMap[name].Clear();
             }
 
             ImGui.TreePop();
@@ -229,27 +238,27 @@ public class GuiSettingsGenerator
                 continue;
             }
 
-            if (!_recordedKeys.Contains(key) && key != KeyCode.Return && key != KeyCode.Escape)
+            if (!_recordedKeysMap[name].Contains(key) && key != KeyCode.Return && key != KeyCode.Escape)
             {
-                _recordedKeys.Add(key);
+                _recordedKeysMap[name].Add(key);
             }
         }
 
-        var recordedString = string.Join(" + ", _recordedKeys);
+        var recordedString = string.Join(" + ", _recordedKeysMap[name]);
         ImGui.Text($"Recording: {recordedString}");
 
-        if (Input.GetKeyDown(KeyCode.Return) && _recordedKeys.Count > 0)
+        if (Input.GetKeyDown(KeyCode.Return) && _recordedKeysMap[name].Count > 0)
         {
             keyCodes.Clear();
-            keyCodes.AddRange(_recordedKeys);
+            keyCodes.AddRange(_recordedKeysMap[name]);
             changed = true;
-            _isRecordingKeybind = false;
-            _recordedKeys.Clear();
+            _isRecordingKeybindMap[name] = false;
+            _recordedKeysMap[name].Clear();
         }
         else if (Input.GetKeyDown(KeyCode.Escape))
         {
-            _isRecordingKeybind = false;
-            _recordedKeys.Clear();
+            _isRecordingKeybindMap[name] = false;
+            _recordedKeysMap[name].Clear();
         }
 
         ImGui.TreePop();
