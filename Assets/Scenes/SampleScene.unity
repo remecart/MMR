@@ -307,6 +307,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f541c49c5f23614d87ca791b5d8401c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _notePrefab: {fileID: 3448937148021664284, guid: 2f2b0224f832dea42b8a1a7bb8c72d57, type: 3}
+  _bombPrefab: {fileID: 0}
 --- !u!114 &281471561
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -319,7 +321,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9156f7c19ace45519ec7d40134a73f3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnOffset: 0
+  spawnOffset: 150
 --- !u!4 &281471562
 Transform:
   m_ObjectHideFlags: 0

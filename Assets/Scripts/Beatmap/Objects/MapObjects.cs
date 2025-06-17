@@ -1,16 +1,17 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class MapObjects : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    [SerializeField]
+    private GameObject _notePrefab;
+    [SerializeField]
+    private GameObject _bombPrefab;
 
-    // Update is called once per frame
-    void Update()
+    public void SpawnNote(ColorNote note)
     {
+        var go = Instantiate(_notePrefab, transform, true);
+        go.transform.localPosition = new Vector3((float)note.X, (float)note.Y, note.Beat);
         
     }
 }

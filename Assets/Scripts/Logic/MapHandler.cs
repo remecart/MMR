@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -33,17 +34,17 @@ public class MapHandler : MonoBehaviour
         _mapLoader.OnMapLoaded += OnMapLoaded;
         CurrentBeat.OnValueChanged += SpawnMapObjects;
 
-        Debug.Log(_mapObjects == null);
+        SpawnMapObjects(CurrentBeat.Value);
     }
 
     private void Update()
     {
-        if (_keybindConfig.StepForward.Active())
+        if (_keybindConfig.StepForward.Active() || Input.mouseScrollDelta.y > 0)
         {
             CurrentBeat.Value++;
         }
 
-        if (_keybindConfig.StepBackwards.Active())
+        if (_keybindConfig.StepBackwards.Active() || Input.mouseScrollDelta.y < 0)
         {
             CurrentBeat.Value--;
         }
@@ -66,7 +67,7 @@ public class MapHandler : MonoBehaviour
 
         foreach (var note in notes)
         {
-            // var go = Instantiate();
+            _mapObjects.SpawnNote(note);
         }
     }
 }
