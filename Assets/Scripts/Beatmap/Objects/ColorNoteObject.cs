@@ -1,23 +1,30 @@
 using System;
 using UnityEngine;
 using VContainer;
+using VContainer.Unity;
 
 public class ColorNoteObject : MonoBehaviour
 {
-    [Inject]
-    private readonly NoteColorConfig _noteColorConfig;
-    
-    [SerializeField]
-    public ColorNote colorNote;
+    [SerializeField] public ColorNote colorNote;
 
-    private void Start()
+    public void SetNoteColor(Color color)
     {
-        var material = gameObject.GetComponent<MeshRenderer>().material;
+        var material = gameObject
+            .GetComponent<MeshRenderer>()
+            .material;
 
-        if (colorNote.SaberType == SaberType.Left)
+        if (material == null)
         {
-            material.color = _noteColorConfig.LeftColor;
+            Debug.LogError("MeshRenderer material is null for ColorNoteObject.");
+            return;
         }
-        else material.color = _noteColorConfig.RightColor;
+
+        if (colorNote == null)
+        {
+            Debug.LogError("ColorNote is not assigned for ColorNoteObject.");
+            return;
+        }
+
+        material.color = color;
     }
 }

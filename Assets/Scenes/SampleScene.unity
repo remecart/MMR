@@ -321,7 +321,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9156f7c19ace45519ec7d40134a73f3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnOffset: 150
+  spawnOffset: 2
 --- !u!4 &281471562
 Transform:
   m_ObjectHideFlags: 0

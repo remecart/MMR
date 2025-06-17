@@ -1,40 +1,38 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Serialization;
 using VContainer;
 using VContainer.Unity;
 
 public class MapHandler : MonoBehaviour
 {
-    [Inject]
-    private readonly LifetimeScope scope;
+    [Inject] private readonly LifetimeScope _scope;
 
-    [AwakeInject]
-    private MapLoader _mapLoader;
+    [AwakeInject] private MapLoader _mapLoader;
 
-    [AwakeInject]
-    private KeybindConfig _keybindConfig;
+    [AwakeInject] private KeybindConfig _keybindConfig;
 
-    [AwakeInject]
-    private MapObjects _mapObjects;
+    [AwakeInject] private MapObjects _mapObjects;
 
     private V3Info _beatmap;
 
-    public Observable<float> CurrentBeat = new Observable<float>();
-    public float spawnOffset;
+    public readonly Observable<float> CurrentBeat = new();
+    [FormerlySerializedAs("spawnOffset")] public float _spawnOffset;
+
+    private readonly Dictionary<float, ColorNote> _spawnedNotes = new();
 
     private void Awake()
     {
-        AwakeInjector.InjectInto(this, scope);
+        AwakeInjector.InjectInto(this, _scope);
     }
 
     private void Start()
     {
         _mapLoader.OnMapLoaded += OnMapLoaded;
-        CurrentBeat.OnValueChanged += SpawnMapObjects;
-
-        SpawnMapObjects(CurrentBeat.Value);
+        CurrentBeat.OnValueChanged += OnBeatChanged;
     }
 
     private void Update()
@@ -60,14 +58,32 @@ public class MapHandler : MonoBehaviour
         _mapLoader.OnMapLoaded -= OnMapLoaded;
     }
 
-    private void SpawnMapObjects(float currentBeat)
+    private void OnBeatChanged(float currentBeat)
     {
-        var notes = _beatmap.ColorNotes.Where(x =>
-            x.Beat > currentBeat - spawnOffset && x.Beat < currentBeat + spawnOffset);
+        if (_beatmap == null)
+        {
+            return;
+        }
 
-        foreach (var note in notes)
+        var minBeat = currentBeat - _spawnOffset;
+        var maxBeat = currentBeat + _spawnOffset;
+
+        var notesToSpawn = _beatmap.ColorNotes
+            .Where(x => x.Beat > minBeat && x.Beat < maxBeat && !_spawnedNotes.ContainsKey(x.Beat));
+        foreach (var note in notesToSpawn)
         {
             _mapObjects.SpawnNote(note);
+            _spawnedNotes[note.Beat] = note;
+        }
+
+        var beatsToDespawn = _spawnedNotes.Keys
+            .Where(beat => beat <= minBeat || beat >= maxBeat)
+            .ToList();
+
+        foreach (var beat in beatsToDespawn)
+        {
+            _mapObjects.DespawnNote(_spawnedNotes[beat]);
+            _spawnedNotes.Remove(beat);
         }
     }
 }

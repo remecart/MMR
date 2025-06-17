@@ -19,7 +19,7 @@ public sealed class MapLoader : MonoBehaviour
 
     public void Start()
     {
-        LoadMap(@"C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\2d43e (Isolation - dogwater53)\ExpertPlusStandard.dat");
+        LoadMap(@"/home/rmifka/Dokumente/Maps/Medicine/ExpertPlusStandard.dat");
     }
 
     public void LoadMap(string path)
@@ -114,7 +114,7 @@ public sealed class MapLoader : MonoBehaviour
 [CustomEditor(typeof(MapLoader)), System.Serializable]
 public class MapLoaderInterface : Editor
 {
-    private string _path = @"C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\2d43e (Isolation - dogwater53)\ExpertPlusStandard.dat"; // temporary hardcode
+    private string _path = @"/home/rmifka/Dokumente/Maps/Medicine/ExpertPlusStandard.dat"; // temporary hardcode
 
     public override void OnInspectorGUI()
     {
