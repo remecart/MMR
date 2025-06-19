@@ -12,6 +12,8 @@ public class MapObjects : MonoBehaviour
     [AwakeInject] private readonly NoteColorConfig _noteColorConfig;
     
     [AwakeInject] private readonly MappingConfig _mappingConfig;
+    
+    [AwakeInject] private readonly BpmConverter _bpmConverter;
 
     [SerializeField] private GameObject _notePrefab;
     [SerializeField] private GameObject _bombPrefab;
@@ -52,7 +54,7 @@ public class MapObjects : MonoBehaviour
         var go = Instantiate(_notePrefab, transform, true);
         if (note.X != null && note.Y != null)
         {
-            go.transform.localPosition = new Vector3((float)note.X, (float)note.Y, note.Beat * _editorScale);
+            go.transform.localPosition = new Vector3((float)note.X, (float)note.Y,  _bpmConverter.GetPositionFromBeat(note.Beat) * _mappingConfig.EditorScale);
         }
 
         var colorNoteObject = go.GetComponent<ColorNoteObject>();

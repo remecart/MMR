@@ -1,7 +1,4 @@
-using System;
 using UnityEngine;
-using VContainer;
-using VContainer.Unity;
 
 public class ColorNoteObject : MonoBehaviour
 {
@@ -13,12 +10,7 @@ public class ColorNoteObject : MonoBehaviour
         SetTransparent();
     }
 
-    private void FixedUpdate()
-    {
-        SetTransparent();
-    }
-
-    private void SetTransparent()
+    public void SetTransparent()
     {
         if (this.gameObject.transform.position.z < 0)
         {

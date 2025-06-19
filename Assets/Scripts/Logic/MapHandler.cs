@@ -17,6 +17,8 @@ public class MapHandler : MonoBehaviour
     [AwakeInject] private readonly MappingConfig _mappingConfig;
 
     [AwakeInject] private MapObjects _mapObjects;
+    
+    [AwakeInject] private readonly BpmConverter _bpmConverter;
 
     private V3Info _beatmap;
 
@@ -24,6 +26,7 @@ public class MapHandler : MonoBehaviour
     public float _spawnOffset => _mappingConfig.SpawnOffset;
 
     private readonly List<ColorNote> _spawnedNotes = new();
+    public bool isPlaying;
 
     private void Awake()
     {
@@ -33,8 +36,8 @@ public class MapHandler : MonoBehaviour
     private void Start()
     {
         _mapLoader.OnMapLoaded += OnMapLoaded;
+        
         CurrentBeat.OnValueChanged += OnBeatChanged;
-        CurrentBeat.Value = 11;
 
         MonitorRefreshTicker.OnMonitorTick += PlayMap;
     }
@@ -50,11 +53,23 @@ public class MapHandler : MonoBehaviour
         {
             CurrentBeat.Value--;
         }
+
+        if (_keybindConfig.TogglePlaymode.Active()) isPlaying = !isPlaying;
+
     }
 
     private void PlayMap(float refreshInterval)
     {
-        CurrentBeat.Value += 220f / 60f * refreshInterval;
+        if (isPlaying)
+        {
+            // CurrentBeat.Value += _bpmConverter.GetBpmAtBeat(CurrentBeat) / 60f * refreshInterval;
+
+            var currentTime = _bpmConverter.GetRealTimeFromBeat(CurrentBeat.Value);
+            var increasedTime = currentTime + refreshInterval;
+            var updatedBeat = _bpmConverter.GetBeatFromRealTime(increasedTime);
+
+            CurrentBeat.Value = updatedBeat;
+        }
     }
 
     private void FixedUpdate()
@@ -98,7 +113,7 @@ public class MapHandler : MonoBehaviour
         if (_beatmap == null)
             return;
 
-        transform.localPosition = new Vector3(0, 0, - currentBeat * _mappingConfig.EditorScale);
+        transform.localPosition = new Vector3(0, 0, - _bpmConverter.GetPositionFromBeat(currentBeat) * _mappingConfig.EditorScale);
 
         float minBeat = currentBeat - _spawnOffset;
         float maxBeat = currentBeat + _spawnOffset;
@@ -122,6 +137,11 @@ public class MapHandler : MonoBehaviour
         {
             _mapObjects.SpawnNote(note);
             _spawnedNotes.Add(note);
+        }
+        
+        foreach (Transform child in transform)
+        {
+            child.gameObject.GetComponent<ColorNoteObject>().SetTransparent();
         }
     }
 }

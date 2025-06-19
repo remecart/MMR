@@ -322,6 +322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9156f7c19ace45519ec7d40134a73f3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPlaying: 0
 --- !u!4 &281471562
 Transform:
   m_ObjectHideFlags: 0
@@ -412,7 +413,8 @@ MonoBehaviour:
       _editors:
         _lastEditedBy: Micro Mapper
     _difficultyBeatmapSets: []
-  folderPath: C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\xxx
+  folderPath: C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\Bee
+    Hunter - Copy
 --- !u!1 &465239627
 GameObject:
   m_ObjectHideFlags: 0
