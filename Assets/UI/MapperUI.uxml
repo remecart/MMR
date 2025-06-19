@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:VisualElement style="flex-grow: 1;">
-        <ui:Label tabindex="-1" text="FPS:" parse-escape-sequences="true" display-tooltip-when-elided="true" name="FPS-Counter" style="align-items: flex-end; align-self: flex-end;" />
+        <ui:Label tabindex="-1" text="FPS:" parse-escape-sequences="true" display-tooltip-when-elided="true" name="FPS-Counter" style="align-items: flex-end; align-self: flex-end; color: rgb(255, 255, 255);" />
     </ui:VisualElement>
 </ui:UXML>

@@ -8,12 +8,17 @@ using VContainer.Unity;
 public class MapObjects : MonoBehaviour
 {
     [Inject] private readonly LifetimeScope _scope;
+    
     [AwakeInject] private readonly NoteColorConfig _noteColorConfig;
+    
+    [AwakeInject] private readonly MappingConfig _mappingConfig;
 
     [SerializeField] private GameObject _notePrefab;
     [SerializeField] private GameObject _bombPrefab;
 
-    private readonly Dictionary<float, GameObject> _notes = new();
+    private float _editorScale => _mappingConfig.EditorScale;
+    
+    public readonly List<GameObject> Notes = new();
 
     private void Awake()
     {
@@ -34,20 +39,23 @@ public class MapObjects : MonoBehaviour
             return;
         }
 
-        if (_notes.ContainsKey(note.Beat))
+        // Avoid double-spawning the same note reference
+        if (Notes.Any(go =>
+            {
+                var obj = go.GetComponent<ColorNoteObject>();
+                return obj != null && obj.colorNote == note;
+            }))
         {
-            return; // Schon gespawnt
+            return;
         }
 
         var go = Instantiate(_notePrefab, transform, true);
         if (note.X != null && note.Y != null)
         {
-            go.transform.localPosition = new Vector3((float)note.X, (float)note.Y, note.Beat);
+            go.transform.localPosition = new Vector3((float)note.X, (float)note.Y, note.Beat * _editorScale);
         }
 
         var colorNoteObject = go.GetComponent<ColorNoteObject>();
-        colorNoteObject.colorNote = note;
-
         if (colorNoteObject == null)
         {
             Debug.LogError("ColorNoteObject component is missing on the note prefab.");
@@ -55,69 +63,51 @@ public class MapObjects : MonoBehaviour
             return;
         }
 
-        colorNoteObject.SetNoteColor(note.SaberType == SaberType.Left
-            ? _noteColorConfig.LeftColor
-            : _noteColorConfig.RightColor);
+        colorNoteObject.colorNote = note;
+        colorNoteObject.SetNoteColor(
+            note.SaberType == SaberType.Left ? _noteColorConfig.LeftColor : _noteColorConfig.RightColor);
 
-        var direction = GetEulerAnglesFromDirection(note.Direction);
-        go.transform.localRotation = Quaternion.Euler(direction);
-        go.transform.rotation = Quaternion.Euler(-90, 0, 0);
+        go.transform.localRotation = Quaternion.Euler(0, 0, Rotation(note.Direction));
 
         if (note.Direction == 8)
-        {
-            go.transform.GetChild(0).gameObject.SetActive(false);
-        }
+            go.transform.GetChild(2).gameObject.SetActive(false);
         else
-        {
             go.transform.GetChild(1).gameObject.SetActive(false);
-        }
 
-        _notes[note.Beat] = go;
+        Notes.Add(go);
     }
 
     public void DespawnNote(ColorNote note)
     {
-        if (note == null)
-        {
-            return;
-        }
+        if (note == null) return;
 
-        if (!_notes.TryGetValue(note.Beat, out var go))
-        {
-            return;
-        }
+        var go = Notes
+            .FirstOrDefault(n =>
+            {
+                var obj = n.GetComponent<ColorNoteObject>();
+                return obj != null && obj.colorNote == note;
+            });
 
         if (go != null)
         {
             Destroy(go);
+            Notes.Remove(go);
         }
-
-        _notes.Remove(note.Beat);
     }
-
-    private static Vector3 GetEulerAnglesFromDirection(int direction)
+    
+    public int Rotation(int level)
     {
-        return direction switch
+        return level switch
         {
-            0 => new Vector3(0, 0, 0) // Up
-            ,
-            1 => new Vector3(0, 0, 180) // Down
-            ,
-            2 => new Vector3(0, 0, 90) // Left
-            ,
-            3 => new Vector3(0, 0, 270) // Right
-            ,
-            4 => new Vector3(0, 0, 45) // Up-Left
-            ,
-            5 => new Vector3(0, 0, 315) // Up-Right
-            ,
-            6 => new Vector3(0, 0, 135) // Down-Left
-            ,
-            7 => new Vector3(0, 0, 225) // Down-Right
-            ,
-            8 => new Vector3(0, 0, 0) // Any direction (or random if needed)
-            ,
-            _ => Vector3.zero
+            0 => 180,
+            1 => 0,
+            2 => 270,
+            3 => 90,
+            4 => 225,
+            5 => 135,
+            6 => 315,
+            7 => 45,
+            _ => 0
         };
     }
 }

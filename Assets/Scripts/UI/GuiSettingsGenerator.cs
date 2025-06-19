@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using ImGuiNET;
 using UnityEngine;
 using VContainer;
@@ -86,7 +87,16 @@ public class GuiSettingsGenerator
                     {
                         case float floatValue:
                         {
-                            changed = RenderFloat(property.Name, ref floatValue);
+                            var rangeAttr = property.GetCustomAttribute<SliderRangeAttribute>();
+                            if (rangeAttr is not null)
+                            {
+                                changed = RenderFloat(property.Name, ref floatValue, rangeAttr.RangeStart, rangeAttr.RangeEnd);
+                            }
+                            else
+                            {
+                                changed = RenderFloat(property.Name, ref floatValue);
+                            }
+
                             if (changed)
                             {
                                 property.SetValue(config, floatValue);
@@ -154,10 +164,10 @@ public class GuiSettingsGenerator
         ImGui.EndTabBar();
         ImGui.End();
     }
-
-    private bool RenderFloat(string name, ref float value)
+    
+    private bool RenderFloat(string name, ref float value, float min = 0, float max = 1)
     {
-        return ImGui.SliderFloat(name, ref value, 0, 1);
+        return ImGui.SliderFloat(name, ref value, min, max);
     }
 
     private bool RenderInt(string name, ref int value)
