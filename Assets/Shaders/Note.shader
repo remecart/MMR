@@ -15,7 +15,10 @@ Shader "MicroMapper/Note"
 
     SubShader
     {
-        Tags { "RenderType" = "Transparent"  "Queue" = "Geometry+0" "IgnoreProjector" = "True" "IsEmissive" = "true" }
+        Tags
+        {
+            "RenderType" = "Transparent" "Queue" = "Geometry+0" "IgnoreProjector" = "True" "IsEmissive" = "true"
+        }
         Cull Back
         Blend One [_Transparent]
 
@@ -38,8 +41,12 @@ Shader "MicroMapper/Note"
 
         void surf(Input i, inout SurfaceOutputStandard o)
         {
-            float4 temp_output_1_0 = _Color;
-            o.Albedo = temp_output_1_0.rgb;
+            float4 colorAdjusted = _Color;
+            if (_Transparent == 1.0)
+                colorAdjusted *= 0.1;
+
+            o.Albedo = colorAdjusted.rgb;
+
             float4 ase_screenPos = float4(i.screenPos.xyz, i.screenPos.w + 0.00000000001);
             float4 ase_screenPosNorm = ase_screenPos / ase_screenPos.w;
             ase_screenPosNorm.z = (UNITY_NEAR_CLIP_VALUE >= 0) ? ase_screenPosNorm.z : ase_screenPosNorm.z * 0.5 + 0.5;
@@ -47,11 +54,11 @@ Shader "MicroMapper/Note"
 
             if (_Unlit == 1.0)
             {
-                o.Emission = (_Color * _ScreenspaceIntensity).rgb;
+                o.Emission = (colorAdjusted * _ScreenspaceIntensity).rgb;
             }
             else
             {
-                o.Emission = ((_Color * tex2DNode7 * _Transparent) * _ScreenspaceIntensity).rgb;
+                o.Emission = ((colorAdjusted * tex2DNode7 * _Transparent) * _ScreenspaceIntensity).rgb;
             }
 
             float ifLocalVar28 = 0;
@@ -69,16 +76,17 @@ Shader "MicroMapper/Note"
                 ifLocalVar31 = temp_cast_3;
             clip(ifLocalVar31.r - _maskclip);
         }
-
         ENDCG
         CGPROGRAM
-        #pragma surface surf Standard keepalpha fullforwardshadows exclude_path:deferred 
-
+        #pragma surface surf Standard keepalpha fullforwardshadows exclude_path:deferred
         ENDCG
         Pass
         {
             Name "ShadowCaster"
-            Tags { "LightMode" = "ShadowCaster" }
+            Tags
+            {
+                "LightMode" = "ShadowCaster"
+            }
             ZWrite On
             CGPROGRAM
             #pragma vertex vert
@@ -89,12 +97,13 @@ Shader "MicroMapper/Note"
             #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
             #include "HLSLSupport.cginc"
             #if ( SHADER_API_D3D11 || SHADER_API_GLCORE || SHADER_API_GLES || SHADER_API_GLES3 || SHADER_API_METAL || SHADER_API_VULKAN )
-                #define CAN_SKIP_VPOS
+            #define CAN_SKIP_VPOS
             #endif
             #include "UnityCG.cginc"
             #include "Lighting.cginc"
             #include "UnityPBSLighting.cginc"
             sampler3D _DitherMaskLOD;
+
             struct v2f
             {
                 V2F_SHADOW_CASTER;
@@ -103,6 +112,7 @@ Shader "MicroMapper/Note"
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
+
             v2f vert(appdata_full v)
             {
                 v2f o;
@@ -117,10 +127,11 @@ Shader "MicroMapper/Note"
                 o.screenPos = ComputeScreenPos(o.pos);
                 return o;
             }
+
             half4 frag(v2f IN
-            #if !defined(CAN_SKIP_VPOS)
+                #if !defined(CAN_SKIP_VPOS)
             , UNITY_VPOS_TYPE vpos : VPOS
-            #endif
+                #endif
             ) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(IN);

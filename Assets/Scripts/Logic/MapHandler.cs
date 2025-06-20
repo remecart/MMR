@@ -101,6 +101,9 @@ public class MapHandler : MonoBehaviour
     {
         _spawnedNotes.Clear();
         _mapObjects.Notes.Clear();
+        
+        transform.parent.localPosition = new Vector3(0, 0, - _bpmConverter.GetPositionFromBeat(CurrentBeat.Value) * _mappingConfig.EditorScale);
+        
         BeatLines.ClearLines();
         
         foreach (Transform child in transform)
@@ -152,6 +155,6 @@ public class MapHandler : MonoBehaviour
             child.gameObject.GetComponent<ColorNoteObject>().SetTransparent();
         }
         
-        BeatLines.CreateBeatLines(currentBeat, editorScale, spawnOffset);
+        BeatLines.SpawnBeatLines(currentBeat, editorScale, spawnOffset);
     }
 }
