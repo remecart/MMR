@@ -20,6 +20,8 @@ public class MapHandler : MonoBehaviour
     
     [AwakeInject] private readonly BpmConverter _bpmConverter;
 
+    public BeatLines BeatLines;
+
     private V3Info _beatmap;
 
     public readonly Observable<float> CurrentBeat = new();
@@ -99,6 +101,7 @@ public class MapHandler : MonoBehaviour
     {
         _spawnedNotes.Clear();
         _mapObjects.Notes.Clear();
+        BeatLines.ClearLines();
         
         foreach (Transform child in transform)
         {
@@ -110,13 +113,18 @@ public class MapHandler : MonoBehaviour
     
     private void OnBeatChanged(float currentBeat)
     {
+        var editorScale = _mappingConfig.EditorScale;
+        var spawnOffset = _mappingConfig.SpawnOffset;
+            
         if (_beatmap == null)
+        {
             return;
+        }
 
-        transform.localPosition = new Vector3(0, 0, - _bpmConverter.GetPositionFromBeat(currentBeat) * _mappingConfig.EditorScale);
+        transform.parent.localPosition = new Vector3(0, 0, - _bpmConverter.GetPositionFromBeat(currentBeat) * editorScale);
 
-        float minBeat = currentBeat - _spawnOffset;
-        float maxBeat = currentBeat + _spawnOffset;
+        var minBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) - spawnOffset);
+        var maxBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) + spawnOffset);
 
         // Despawn notes out of range
         var notesToDespawn = _spawnedNotes
@@ -135,7 +143,7 @@ public class MapHandler : MonoBehaviour
 
         foreach (var note in notesToSpawn)
         {
-            _mapObjects.SpawnNote(note);
+            _mapObjects.SpawnNote(note, editorScale);
             _spawnedNotes.Add(note);
         }
         
@@ -143,5 +151,7 @@ public class MapHandler : MonoBehaviour
         {
             child.gameObject.GetComponent<ColorNoteObject>().SetTransparent();
         }
+        
+        BeatLines.CreateBeatLines(currentBeat, editorScale, spawnOffset);
     }
 }

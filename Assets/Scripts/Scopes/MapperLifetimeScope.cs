@@ -13,9 +13,9 @@ public class MapperLifetimeScope : LifetimeScope
     [SerializeField]
     private ReadMapInfo _readMapInfo;
     
-    [SerializeField]
+    [SerializeField] 
     private BpmConverter _bpmConverter;
-
+    
     protected override void Configure(IContainerBuilder builder)
     {
         builder.RegisterInstance(_mapLoader);

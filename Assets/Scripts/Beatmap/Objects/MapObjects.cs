@@ -27,7 +27,7 @@ public class MapObjects : MonoBehaviour
         AwakeInjector.InjectInto(this, _scope);
     }
 
-    public void SpawnNote(ColorNote note)
+    public void SpawnNote(ColorNote note, float editorScale)
     {
         if (_notePrefab == null)
         {
@@ -54,7 +54,7 @@ public class MapObjects : MonoBehaviour
         var go = Instantiate(_notePrefab, transform, true);
         if (note.X != null && note.Y != null)
         {
-            go.transform.localPosition = new Vector3((float)note.X, (float)note.Y,  _bpmConverter.GetPositionFromBeat(note.Beat) * _mappingConfig.EditorScale);
+            go.transform.localPosition = new Vector3((float)note.X - 1.5f, (float)note.Y + 0.5f,  _bpmConverter.GetPositionFromBeat(note.Beat) * editorScale);
         }
 
         var colorNoteObject = go.GetComponent<ColorNoteObject>();
