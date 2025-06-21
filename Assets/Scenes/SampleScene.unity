@@ -601,9 +601,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BeatLine: {fileID: 3040912287828008307, guid: f7fb25dde330bc04b803d0123531820b, type: 3}
-  SubBeatLine: {fileID: 2495310642923061209, guid: 02922162848a38d41add1c95261d8128, type: 3}
+  SubBeatLine: {fileID: 0}
   GuideLine: {fileID: 1139600628220007039, guid: 862a841683bc8af44a02971339bf4e97, type: 3}
-  precision: 4
+  cubeMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  cubeMaterial: {fileID: 2100000, guid: f5e126b2501dffb479dab132fbdf3d0e, type: 2}
+  precision: 21
   LineCache: []
 --- !u!1 &963194225
 GameObject:

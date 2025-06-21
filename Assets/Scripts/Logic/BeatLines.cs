@@ -11,47 +11,80 @@ using VContainer.Unity;
 public class BeatLines : MonoBehaviour
 {
     [Inject] private readonly LifetimeScope _scope;
-    
+
     [AwakeInject] private BpmConverter _bpmConverter;
-    
+
     public GameObject BeatLine;
     public GameObject SubBeatLine;
     public GameObject GuideLine;
-    
+
+    public Mesh cubeMesh;
+    public Material cubeMaterial;
+    private List<Matrix4x4> subBeatMatrices = new();
+
     public int precision;
 
     public List<GameObject> LineCache;
-    
+
     private void Awake()
     {
         AwakeInjector.InjectInto(this, _scope);
+
+        if (cubeMesh == null)
+            cubeMesh = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<MeshFilter>().sharedMesh;
+
+        if (cubeMaterial == null)
+        {
+            cubeMaterial = new Material(Shader.Find("Standard"));
+            cubeMaterial.enableInstancing = true;
+        }
+    }
+
+    private void Start()
+    {
+        subBeatMatrices.Clear();
+    }
+
+    private void Update()
+    {
+        if (subBeatMatrices.Count > 0)
+        {
+            Graphics.DrawMeshInstanced(
+                cubeMesh,
+                0,
+                cubeMaterial,
+                subBeatMatrices
+            );
+        }
     }
 
     public void ClearLines()
     {
         LineCache.Clear();
-        
-        foreach (Transform child in this.transform)
+
+        foreach (Transform child in transform.GetChild(0).transform)
         {
             Destroy(child.gameObject);
         }
     }
-    
-    public void SpawnBeatLines(float currentBeat, float editorScale, float spawnOffset) // precision >= 1 
+
+    public void SpawnBeatLines(float currentBeat, float editorScale, float spawnOffset)
     {
-        var minBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) - spawnOffset);
-        var maxBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) + spawnOffset);
+        subBeatMatrices.Clear();
+
+        var minBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) - spawnOffset - 0.25f);
+        var maxBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) + spawnOffset + 0.25f);
 
         minBeat = Math.Clamp(minBeat, 0, 9999);
 
-        // Iterate in quarter beat steps
         for (float beat = Mathf.Ceil(minBeat * precision) / precision; beat <= maxBeat; beat += 1f / precision)
         {
+            float tolerance = 0.0125f;
             if (LineCache.Any(go =>
                     float.TryParse(go.name, out var parsed) &&
-                    Mathf.Approximately(parsed, beat)))
+                    Mathf.Abs(parsed - beat) <= tolerance))
             {
-                continue; // Already spawned
+                continue;
             }
 
             if (Mathf.Abs(Mathf.Round(beat) - beat) < 0.01f)
@@ -61,14 +94,13 @@ public class BeatLines : MonoBehaviour
                 go.name = $"{beat}";
                 go.transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text = Mathf.Round(beat).ToString(CultureInfo.InvariantCulture);
                 LineCache.Add(go);
-
             }
             else
             {
-                var go = Instantiate(SubBeatLine, transform.GetChild(0).transform, false);
-                go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale);
-                go.name = $"{beat}";
-                LineCache.Add(go);
+                var pos = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat - currentBeat) * editorScale);
+                var scale = new Vector3(4f, 0.01f, 0.025f);
+                Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.identity, scale);
+                subBeatMatrices.Add(matrix);
             }
         }
 
@@ -108,7 +140,6 @@ public class BeatLines : MonoBehaviour
             line.transform.localScale = new Vector3(0.02f, 0.01f, lengthZ);
         }
 
-        // Deaktiviere alle überschüssigen Linien, falls z. B. Pool vorher länger war
         for (var i = 5; i < _guideLinePool.Count; i++)
         {
             if (_guideLinePool[i] != null)
@@ -116,11 +147,42 @@ public class BeatLines : MonoBehaviour
                 _guideLinePool[i].SetActive(false);
             }
         }
+
+        HandleEdgeBeatLine(minBeat, maxBeat, editorScale);
     }
-    
+
+    private void HandleEdgeBeatLine(float minBeat, float maxBeat, float editorScale)
+    {
+        var min = this.transform.GetChild(1).transform.Find("MinBeat");
+        var max = this.transform.GetChild(1).transform.Find("MaxBeat");
+
+        if (min == null)
+        {
+            var go = Instantiate(BeatLine, transform.GetChild(1).transform, false);
+            go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(minBeat) * editorScale);
+            go.name = $"MinBeat";
+            Destroy(go.transform.GetChild(0).gameObject);
+        }
+        else
+        {
+            min.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(minBeat) * editorScale);
+        }
+
+        if (max == null)
+        {
+            var go = Instantiate(BeatLine, transform.GetChild(1).transform, false);
+            go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(maxBeat) * editorScale);
+            go.name = $"MaxBeat";
+            Destroy(go.transform.GetChild(0).gameObject);
+        }
+        else
+        {
+            max.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(maxBeat) * editorScale);
+        }
+    }
+
     private void DespawnBeatLines(float minBeat, float maxBeat)
     {
-        // Clean up out-of-range lines
         var linesToDespawn = LineCache
             .Where(line =>
             {

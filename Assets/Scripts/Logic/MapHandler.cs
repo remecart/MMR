@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -48,30 +50,65 @@ public class MapHandler : MonoBehaviour
     {
         if (_keybindConfig.StepForward.Active() || Input.mouseScrollDelta.y > 0)
         {
-            CurrentBeat.Value++;
+            if (Input.GetKey(KeyCode.LeftControl))
+            {
+                var newPrecision = Mathf.RoundToInt(BeatLines.precision / 2);
+                
+                if (newPrecision < 3)
+                {
+                    newPrecision = 4;
+                }
+                
+                BeatLines.precision = newPrecision;
+                
+                ReloadBeat();
+                
+            }
+            else
+            {
+                CurrentBeat.Value++;
+            }
         }
 
-        if (_keybindConfig.StepBackwards.Active() || Input.mouseScrollDelta.y < 0)
+        if (_keybindConfig.StepBackwards.Active() || Input.mouseScrollDelta.y < 0 && !Input.GetKeyDown(KeyCode.LeftControl))
         {
-            CurrentBeat.Value--;
+            if (Input.GetKey(KeyCode.LeftControl))
+            {
+                var newPrecision = Mathf.RoundToInt(BeatLines.precision * 2);
+                
+                if (newPrecision > 32)
+                {
+                    newPrecision = 32;
+                }
+                BeatLines.precision = newPrecision;
+                
+                ReloadBeat();
+            }
+            else
+            {
+                CurrentBeat.Value--;
+            }
         }
 
-        if (_keybindConfig.TogglePlaymode.Active()) isPlaying = !isPlaying;
-
+        if (_keybindConfig.TogglePlaymode.Active())
+        {
+            isPlaying = !isPlaying;
+        }
     }
 
     private void PlayMap(float refreshInterval)
     {
-        if (isPlaying)
+        if (!isPlaying)
         {
-            // CurrentBeat.Value += _bpmConverter.GetBpmAtBeat(CurrentBeat) / 60f * refreshInterval;
-
-            var currentTime = _bpmConverter.GetRealTimeFromBeat(CurrentBeat.Value);
-            var increasedTime = currentTime + refreshInterval;
-            var updatedBeat = _bpmConverter.GetBeatFromRealTime(increasedTime);
-
-            CurrentBeat.Value = updatedBeat;
+            CurrentBeat.Value = Mathf.RoundToInt(CurrentBeat.Value * BeatLines.precision) / BeatLines.precision;
         }
+        // CurrentBeat.Value += _bpmConverter.GetBpmAtBeat(CurrentBeat) / 60f * refreshInterval;
+
+        var currentTime = _bpmConverter.GetRealTimeFromBeat(CurrentBeat.Value);
+        var increasedTime = currentTime + refreshInterval;
+        var updatedBeat = _bpmConverter.GetBeatFromRealTime(increasedTime);
+
+        CurrentBeat.Value = updatedBeat;
     }
 
     private void FixedUpdate()
@@ -119,13 +156,13 @@ public class MapHandler : MonoBehaviour
         var editorScale = _mappingConfig.EditorScale;
         var spawnOffset = _mappingConfig.SpawnOffset;
             
+        transform.parent.localPosition = new Vector3(0, 0, - _bpmConverter.GetPositionFromBeat(currentBeat) * editorScale);
+        
         if (_beatmap == null)
         {
             return;
         }
-
-        transform.parent.localPosition = new Vector3(0, 0, - _bpmConverter.GetPositionFromBeat(currentBeat) * editorScale);
-
+        
         var minBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) - spawnOffset);
         var maxBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) + spawnOffset);
 
