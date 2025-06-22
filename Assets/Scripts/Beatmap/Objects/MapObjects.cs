@@ -8,19 +8,22 @@ using VContainer.Unity;
 public class MapObjects : MonoBehaviour
 {
     [Inject] private readonly LifetimeScope _scope;
-    
+
     [AwakeInject] private readonly NoteColorConfig _noteColorConfig;
-    
+
     [AwakeInject] private readonly MappingConfig _mappingConfig;
-    
+
     [AwakeInject] private readonly BpmConverter _bpmConverter;
 
     [SerializeField] private GameObject _notePrefab;
     [SerializeField] private GameObject _bombPrefab;
+    [SerializeField] private GameObject _obstaclePrefab;
 
     private float _editorScale => _mappingConfig.EditorScale;
-    
+
     public readonly List<GameObject> Notes = new();
+    public readonly List<GameObject> Bombs = new();
+    public readonly List<GameObject> Obstacles = new();
 
     private void Awake()
     {
@@ -54,7 +57,8 @@ public class MapObjects : MonoBehaviour
         var go = Instantiate(_notePrefab, transform, true);
         if (note.X != null && note.Y != null)
         {
-            go.transform.localPosition = new Vector3((float)note.X - 1.5f, (float)note.Y + 0.5f,  _bpmConverter.GetPositionFromBeat(note.Beat) * editorScale);
+            go.transform.localPosition = new Vector3((float)note.X - 1.5f, (float)note.Y + 0.5f,
+                _bpmConverter.GetPositionFromBeat(note.Beat) * editorScale);
         }
 
         var colorNoteObject = go.GetComponent<ColorNoteObject>();
@@ -66,6 +70,7 @@ public class MapObjects : MonoBehaviour
         }
 
         colorNoteObject.colorNote = note;
+
         colorNoteObject.SetNoteColor(
             note.SaberType == SaberType.Left ? _noteColorConfig.LeftColor : _noteColorConfig.RightColor);
 
@@ -78,6 +83,110 @@ public class MapObjects : MonoBehaviour
 
         Notes.Add(go);
     }
+
+    public void SpawnBomb(BombNote bomb, float editorScale)
+    {
+        if (_bombPrefab == null)
+        {
+            Debug.Log("Bomb prefab is not assigned in MapObjects.");
+            return;
+        }
+
+        if (bomb == null)
+        {
+            Debug.Log("BombNote is null in MapObjects.");
+            return;
+        }
+
+        // Avoid double-spawning the same bomb reference
+        if (Bombs.Any(go =>
+            {
+                if (go == null) return false; // Unity null check
+                var obj = go.GetComponent<BombNoteObject>();
+                return obj != null && obj.bombNote == bomb;
+            }))
+        {
+            return;
+        }
+
+        var go = Instantiate(_bombPrefab, transform, true);
+        if (bomb.X != null && bomb.Y != null)
+        {
+            go.transform.localPosition = new Vector3((float)bomb.X - 1.5f, (float)bomb.Y + 0.5f,
+                _bpmConverter.GetPositionFromBeat(bomb.Beat) * editorScale);
+        }
+
+        var bombNoteObject = go.GetComponent<BombNoteObject>();
+
+        bombNoteObject.bombNote = bomb;
+        Bombs.Add(go);
+    }
+
+    public void SpawnObstacle(Obstacle obstacle, float editorScale)
+    {
+        if (_obstaclePrefab == null)
+        {
+            Debug.Log("Obstacle prefab is not assigned in MapObjects.");
+            return;
+        }
+
+        if (obstacle == null)
+        {
+            Debug.Log("Obstacle is null in MapObjects.");
+            return;
+        }
+
+        // Avoid double-spawning the same bomb reference
+        if (Obstacles.Any(go =>
+            {
+                if (go == null) return false; // Unity null check
+                var obj = go.GetComponent<ObstacleObject>();
+                return obj != null && obj.obstacle == obstacle;
+            }))
+        {
+            return;
+        }
+
+        var go = Instantiate(_obstaclePrefab, transform, true);
+        if (obstacle.X != null && obstacle.Y != null)
+        {
+            var zPos = _bpmConverter.GetPositionFromBeat(obstacle.Beat + obstacle.Duration) -
+                       _bpmConverter.GetPositionFromBeat(obstacle.Beat);
+            go.transform.localPosition = new Vector3((float)obstacle.X - 1.5f,
+                Mathf.Clamp(Mathf.Clamp((float)obstacle.Y, 0f, 2f) + (float)obstacle.Height / 2, 0f, 5.5f) - 0.5f,
+                (_bpmConverter.GetPositionFromBeat(obstacle.Beat) + (zPos / 2)) * editorScale);
+            go.transform.localScale = new Vector3(obstacle.Width, obstacle.Height, zPos * editorScale);
+            
+            // smr.SetBlendShapeWeight(0, 800 * go.transform.localScale.x);
+            // smr.SetBlendShapeWeight(1, 800 * go.transform.localScale.y);
+            // smr.SetBlendShapeWeight(2, 800 * go.transform.localScale.z);
+        }
+
+        var obstacleObject = go.GetComponent<ObstacleObject>();
+
+        obstacleObject.obstacle = obstacle;
+        Obstacles.Add(go);
+    }
+
+    public void DespawnObstacle(Obstacle obstacle)
+    {
+        if (obstacle == null) return;
+
+        var go = Obstacles
+            .FirstOrDefault(n =>
+            {
+                if (n == null) return false; // Unity null check
+                var obj = n.GetComponent<ObstacleObject>();
+                return obj != null && obj.obstacle == obstacle;
+            });
+
+        if (go != null)
+        {
+            Destroy(go);
+            Obstacles.Remove(go);
+        }
+    }
+
 
     public void DespawnNote(ColorNote note)
     {
@@ -96,7 +205,26 @@ public class MapObjects : MonoBehaviour
             Notes.Remove(go);
         }
     }
-    
+
+    public void DespawnBomb(BombNote bomb)
+    {
+        if (bomb == null) return;
+
+        var go = Bombs
+            .FirstOrDefault(n =>
+            {
+                if (n == null) return false; // Unity null check
+                var obj = n.GetComponent<BombNoteObject>();
+                return obj != null && obj.bombNote == bomb;
+            });
+
+        if (go != null)
+        {
+            Destroy(go);
+            Bombs.Remove(go);
+        }
+    }
+
     public int Rotation(int level)
     {
         return level switch

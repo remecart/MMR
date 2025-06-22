@@ -11,7 +11,6 @@ using VContainer.Unity;
 public class BeatLines : MonoBehaviour
 {
     [Inject] private readonly LifetimeScope _scope;
-
     [AwakeInject] private BpmConverter _bpmConverter;
 
     public GameObject BeatLine;
@@ -20,11 +19,17 @@ public class BeatLines : MonoBehaviour
 
     public Mesh cubeMesh;
     public Material cubeMaterial;
-    private List<Matrix4x4> subBeatMatrices = new();
-
-    public int precision;
-
+    
     public List<GameObject> LineCache;
+
+    public List<Matrix4x4> subBeatMatrices = new();
+    private readonly Queue<GameObject> beatLinePool = new();
+    private readonly List<GameObject> guideLinePool = new();
+
+    private float _lastBeat = -1f;
+    private float _lastOffset = -1f;
+
+    private const int MaxSubBeatCount = 1000;
 
     private void Awake()
     {
@@ -35,8 +40,7 @@ public class BeatLines : MonoBehaviour
 
         if (cubeMaterial == null)
         {
-            cubeMaterial = new Material(Shader.Find("Standard"));
-            cubeMaterial.enableInstancing = true;
+            cubeMaterial = new Material(Shader.Find("Standard")) { enableInstancing = true };
         }
     }
 
@@ -62,44 +66,60 @@ public class BeatLines : MonoBehaviour
     {
         LineCache.Clear();
 
-        foreach (Transform child in transform.GetChild(0).transform)
+        foreach (Transform child in transform.GetChild(0))
         {
             Destroy(child.gameObject);
         }
+
+        foreach (Transform child in transform.GetChild(1))
+        {
+            Destroy(child.gameObject);
+        }
+
+        beatLinePool.Clear();
+        guideLinePool.Clear();
     }
 
-    public void SpawnBeatLines(float currentBeat, float editorScale, float spawnOffset)
+    public void ResetLines()
     {
+        ClearLines();
+        subBeatMatrices.Clear();
+        _lastBeat = -1f;
+        _lastOffset = -1f;
+    }
+    
+    public void SpawnBeatLines(float currentBeat, float editorScale, float spawnOffset, int precision)
+    {
+        if (Mathf.Approximately(currentBeat, _lastBeat) && Mathf.Approximately(spawnOffset, _lastOffset)) return;
+
+        _lastBeat = currentBeat;
+        _lastOffset = spawnOffset;
         subBeatMatrices.Clear();
 
-        var minBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) - spawnOffset - 0.25f);
-        var maxBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) + spawnOffset + 0.25f);
+        float adaptivePrecision = Mathf.Max(1, Mathf.FloorToInt(precision / spawnOffset));
+        float minBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) - spawnOffset - 0.25f);
+        float maxBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) + spawnOffset + 0.25f);
 
-        minBeat = Math.Clamp(minBeat, 0, 9999);
+        minBeat = Mathf.Clamp(minBeat, 0, 9999);
 
         for (float beat = Mathf.Ceil(minBeat * precision) / precision; beat <= maxBeat; beat += 1f / precision)
         {
-            float tolerance = 0.0125f;
-            if (LineCache.Any(go =>
-                    float.TryParse(go.name, out var parsed) &&
-                    Mathf.Abs(parsed - beat) <= tolerance))
-            {
-                continue;
-            }
-
             if (Mathf.Abs(Mathf.Round(beat) - beat) < 0.01f)
             {
-                var go = Instantiate(BeatLine, transform.GetChild(0).transform, false);
-                go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale);
-                go.name = $"{beat}";
-                go.transform.GetChild(0).gameObject.GetComponent<TextMeshPro>().text = Mathf.Round(beat).ToString(CultureInfo.InvariantCulture);
-                LineCache.Add(go);
+                if (!LineCache.Any(go => Mathf.Abs(float.Parse(go.name) - beat) < 0.0125f))
+                {
+                    GameObject go = GetOrCreateBeatLine();
+                    go.transform.SetParent(transform.GetChild(0), false);
+                    go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale);
+                    go.name = $"{beat}";
+                    go.GetComponentInChildren<TextMeshPro>().text = Mathf.RoundToInt(beat).ToString();
+                    LineCache.Add(go);
+                }
             }
-            else
+            else if (subBeatMatrices.Count < MaxSubBeatCount)
             {
-                var pos = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat - currentBeat) * editorScale);
-                var scale = new Vector3(4f, 0.01f, 0.025f);
-                Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.identity, scale);
+                Vector3 pos = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale - _bpmConverter.GetPositionFromBeat(currentBeat) * editorScale);
+                Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.identity, new Vector3(4f, 0.01f, 0.025f));
                 subBeatMatrices.Add(matrix);
             }
         }
@@ -108,44 +128,66 @@ public class BeatLines : MonoBehaviour
         DespawnBeatLines(minBeat, maxBeat);
     }
 
-    private List<GameObject> _guideLinePool = new();
+    private GameObject GetOrCreateBeatLine()
+    {
+        if (beatLinePool.Count > 0)
+        {
+            GameObject pooled = beatLinePool.Dequeue();
+            pooled.SetActive(true);
+            return pooled;
+        }
+
+        return Instantiate(BeatLine);
+    }
+
+    private void DespawnBeatLines(float minBeat, float maxBeat)
+    {
+        var toDespawn = LineCache
+            .Where(line => float.TryParse(line.name, out var parsed) && (parsed < minBeat || parsed > maxBeat))
+            .ToList();
+
+        foreach (var line in toDespawn)
+        {
+            LineCache.Remove(line);
+            line.SetActive(false);
+            beatLinePool.Enqueue(line);
+        }
+    }
 
     private void SpawnGuideLines(float currentBeat, float editorScale, float spawnOffset, float minBeat, float maxBeat)
     {
-        var minZ = _bpmConverter.GetPositionFromBeat(minBeat) * editorScale;
-        var maxZ = _bpmConverter.GetPositionFromBeat(maxBeat) * editorScale;
-        var centerZ = (minZ + maxZ) / 2f;
-        var lengthZ = Mathf.Abs(maxZ - minZ);
+        float minZ = _bpmConverter.GetPositionFromBeat(minBeat) * editorScale;
+        float maxZ = _bpmConverter.GetPositionFromBeat(maxBeat) * editorScale;
+        float centerZ = (minZ + maxZ) / 2f;
+        float lengthZ = Mathf.Abs(maxZ - minZ);
 
-        for (var i = 0; i < 5; i++)
+        for (int i = 0; i < 5; i++)
         {
             float x = i - 2;
 
-            GameObject line;
-            if (i < _guideLinePool.Count && _guideLinePool[i] != null)
+            GameObject guide;
+            if (i < guideLinePool.Count && guideLinePool[i] != null)
             {
-                line = _guideLinePool[i];
-                line.SetActive(true);
+                guide = guideLinePool[i];
+                guide.SetActive(true);
             }
             else
             {
-                line = Instantiate(GuideLine, transform.GetChild(1).transform, false);
-                if (i >= _guideLinePool.Count)
-                    _guideLinePool.Add(line);
+                guide = Instantiate(GuideLine, transform.GetChild(1), false);
+                if (i >= guideLinePool.Count)
+                    guideLinePool.Add(guide);
                 else
-                    _guideLinePool[i] = line;
+                    guideLinePool[i] = guide;
             }
 
-            line.transform.localPosition = new Vector3(x, 0, centerZ);
-            line.transform.localScale = new Vector3(0.02f, 0.01f, lengthZ);
+            guide.transform.localPosition = new Vector3(x, 0, centerZ);
+            guide.transform.localScale = new Vector3(0.02f, 0.01f, lengthZ);
         }
 
-        for (var i = 5; i < _guideLinePool.Count; i++)
+        for (int i = 5; i < guideLinePool.Count; i++)
         {
-            if (_guideLinePool[i] != null)
-            {
-                _guideLinePool[i].SetActive(false);
-            }
+            if (guideLinePool[i] != null)
+                guideLinePool[i].SetActive(false);
         }
 
         HandleEdgeBeatLine(minBeat, maxBeat, editorScale);
@@ -153,52 +195,32 @@ public class BeatLines : MonoBehaviour
 
     private void HandleEdgeBeatLine(float minBeat, float maxBeat, float editorScale)
     {
-        var min = this.transform.GetChild(1).transform.Find("MinBeat");
-        var max = this.transform.GetChild(1).transform.Find("MaxBeat");
+        var parent = transform.GetChild(1);
 
+        Transform min = parent.Find("MinBeat");
         if (min == null)
         {
-            var go = Instantiate(BeatLine, transform.GetChild(1).transform, false);
+            GameObject go = Instantiate(BeatLine, parent, false);
             go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(minBeat) * editorScale);
-            go.name = $"MinBeat";
+            go.name = "MinBeat";
             Destroy(go.transform.GetChild(0).gameObject);
         }
         else
         {
-            min.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(minBeat) * editorScale);
+            min.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(minBeat) * editorScale);
         }
 
+        Transform max = parent.Find("MaxBeat");
         if (max == null)
         {
-            var go = Instantiate(BeatLine, transform.GetChild(1).transform, false);
+            GameObject go = Instantiate(BeatLine, parent, false);
             go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(maxBeat) * editorScale);
-            go.name = $"MaxBeat";
+            go.name = "MaxBeat";
             Destroy(go.transform.GetChild(0).gameObject);
         }
         else
         {
-            max.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(maxBeat) * editorScale);
-        }
-    }
-
-    private void DespawnBeatLines(float minBeat, float maxBeat)
-    {
-        var linesToDespawn = LineCache
-            .Where(line =>
-            {
-                if (float.TryParse(line.name, out var parsed))
-                {
-                    return parsed < minBeat || parsed > maxBeat;
-                }
-
-                return false;
-            })
-            .ToList();
-
-        foreach (var line in linesToDespawn)
-        {
-            LineCache.Remove(line);
-            Destroy(line);
+            max.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(maxBeat) * editorScale);
         }
     }
 }

@@ -9,6 +9,8 @@ public class MappingConfig : IConfig
     public float EditorScale { get; set; } = 15f;
     [SliderRange(0.75f, 2.5f)]
     public float SpawnOffset { get; set; } = 2f;
+    [SliderRange(10, 200)]
+    public int SongSpeed { get; set; } = 100;
 }
 
 public class SliderRangeAttribute : Attribute

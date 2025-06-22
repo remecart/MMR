@@ -18,6 +18,8 @@ public class FPSCounter : MonoBehaviour
             Debug.LogError("FPS-Counter label not found in the UI document.");
             return;
         }
+        
+        Application.targetFrameRate = 2000;
     }
 
     private void Update()
