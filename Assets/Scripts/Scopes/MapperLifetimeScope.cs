@@ -15,6 +15,11 @@ public class MapperLifetimeScope : LifetimeScope
     
     [SerializeField] 
     private BpmConverter _bpmConverter;
+
+    [SerializeField] 
+    private SongLoader _songLoader;
+    
+    
     
     protected override void Configure(IContainerBuilder builder)
     {
@@ -22,5 +27,6 @@ public class MapperLifetimeScope : LifetimeScope
         builder.RegisterInstance(_mapObjects);
         builder.RegisterInstance(_readMapInfo);
         builder.RegisterInstance(_bpmConverter);
+        builder.RegisterInstance(_songLoader);
     }
 }

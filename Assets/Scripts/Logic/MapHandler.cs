@@ -17,6 +17,7 @@ public class MapHandler : MonoBehaviour
     [AwakeInject] private KeybindConfig _keybindConfig;
     
     [AwakeInject] private readonly MappingConfig _mappingConfig;
+    [AwakeInject] private readonly SongLoader _songLoader;
 
     [AwakeInject] private MapObjects _mapObjects;
     
@@ -27,9 +28,15 @@ public class MapHandler : MonoBehaviour
     private V3Info _beatmap;
 
     public readonly Observable<float> CurrentBeat = new();
+    public int precision;
+    
+    public float _editorScale => _mappingConfig.EditorScale;
     public float _spawnOffset => _mappingConfig.SpawnOffset;
 
     private readonly List<ColorNote> _spawnedNotes = new();
+    private readonly List<BombNote> _spawnedBombs = new();
+    private readonly List<Obstacle> _spawnedObstacles = new();
+    
     public bool isPlaying;
 
     private void Awake()
@@ -52,19 +59,15 @@ public class MapHandler : MonoBehaviour
         {
             if (Input.GetKey(KeyCode.LeftControl))
             {
-                var newPrecision = Mathf.RoundToInt(BeatLines.precision / 2);
-                
-                if (newPrecision < 3)
+                precision = Mathf.RoundToInt(precision / 2);
+                if (precision < 3)
                 {
-                    newPrecision = 4;
+                    precision = 4;
                 }
                 
-                BeatLines.precision = newPrecision;
-                
-                ReloadBeat();
-                
+                BeatLines.SpawnBeatLines(CurrentBeat.Value, _editorScale, _spawnOffset, precision);
             }
-            else
+            else if (!isPlaying)
             {
                 CurrentBeat.Value++;
             }
@@ -74,17 +77,15 @@ public class MapHandler : MonoBehaviour
         {
             if (Input.GetKey(KeyCode.LeftControl))
             {
-                var newPrecision = Mathf.RoundToInt(BeatLines.precision * 2);
-                
-                if (newPrecision > 32)
+                precision = Mathf.RoundToInt(precision * 2);
+                if (precision > 64)
                 {
-                    newPrecision = 32;
+                    precision = 64;
                 }
-                BeatLines.precision = newPrecision;
                 
-                ReloadBeat();
+                BeatLines.SpawnBeatLines(CurrentBeat.Value, _editorScale, _spawnOffset, precision);
             }
-            else
+            else if (!isPlaying)
             {
                 CurrentBeat.Value--;
             }
@@ -93,6 +94,15 @@ public class MapHandler : MonoBehaviour
         if (_keybindConfig.TogglePlaymode.Active())
         {
             isPlaying = !isPlaying;
+
+            if (isPlaying)
+            {
+                _songLoader.PlaySong(_bpmConverter.GetRealTimeFromBeat(CurrentBeat.Value));
+            }
+            else
+            {
+                _songLoader.StopSong();
+            }
         }
     }
 
@@ -100,10 +110,11 @@ public class MapHandler : MonoBehaviour
     {
         if (!isPlaying)
         {
-            CurrentBeat.Value = Mathf.RoundToInt(CurrentBeat.Value * BeatLines.precision) / BeatLines.precision;
+            return;
         }
         // CurrentBeat.Value += _bpmConverter.GetBpmAtBeat(CurrentBeat) / 60f * refreshInterval;
-
+        
+            
         var currentTime = _bpmConverter.GetRealTimeFromBeat(CurrentBeat.Value);
         var increasedTime = currentTime + refreshInterval;
         var updatedBeat = _bpmConverter.GetBeatFromRealTime(increasedTime);
@@ -137,11 +148,18 @@ public class MapHandler : MonoBehaviour
     public void ReloadBeat()
     {
         _spawnedNotes.Clear();
+        _spawnedBombs.Clear();
+        _spawnedObstacles.Clear();
+        
         _mapObjects.Notes.Clear();
+        _mapObjects.Bombs.Clear();
+        _mapObjects.Obstacles.Clear();
         
         transform.parent.localPosition = new Vector3(0, 0, - _bpmConverter.GetPositionFromBeat(CurrentBeat.Value) * _mappingConfig.EditorScale);
+
+        BeatLines.ResetLines();
         
-        BeatLines.ClearLines();
+        BeatLines.SpawnBeatLines(CurrentBeat.Value, _editorScale, _spawnOffset, precision);
         
         foreach (Transform child in transform)
         {
@@ -166,9 +184,25 @@ public class MapHandler : MonoBehaviour
         var minBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) - spawnOffset);
         var maxBeat = _bpmConverter.GetBeatFromRealTime(_bpmConverter.GetRealTimeFromBeat(currentBeat) + spawnOffset);
 
-        // Despawn notes out of range
+        DespawnObjects(minBeat, maxBeat);
+        SpawnObjects(editorScale, minBeat, maxBeat);
+        
+        BeatLines.SpawnBeatLines(currentBeat, editorScale, spawnOffset, precision);
+    }
+
+    private void DespawnObjects(float minBeat, float maxBeat)
+    {
+        // Despawn objects out of range
         var notesToDespawn = _spawnedNotes
             .Where(note => note.Beat <= minBeat || note.Beat >= maxBeat)
+            .ToList();
+        
+        var bombsToDespawn = _spawnedBombs
+            .Where(bomb => bomb.Beat <= minBeat || bomb.Beat >= maxBeat)
+            .ToList();
+        
+        var obstaclesToDespawn = _spawnedObstacles
+            .Where(obstacle => obstacle.Beat + obstacle.Duration <= minBeat || obstacle.Beat >= maxBeat)
             .ToList();
 
         foreach (var note in notesToDespawn)
@@ -177,9 +211,30 @@ public class MapHandler : MonoBehaviour
             _spawnedNotes.Remove(note);
         }
 
+        foreach (var bomb in bombsToDespawn)
+        {
+            _mapObjects.DespawnBomb(bomb);
+            _spawnedBombs.Remove(bomb);
+        }
+        
+        foreach (var obstacle in obstaclesToDespawn)
+        {
+            _mapObjects.DespawnObstacle(obstacle);
+            _spawnedObstacles.Remove(obstacle);
+        }
+    }
+
+    private void SpawnObjects(float editorScale, float minBeat, float maxBeat)
+    {
         // Spawn notes in range that aren't already spawned
         var notesToSpawn = _beatmap.ColorNotes
             .Where(note => note.Beat >= minBeat && note.Beat < maxBeat && !_spawnedNotes.Contains(note));
+        
+        var bombsToSpawn = _beatmap.BombNotes
+            .Where(bomb => bomb.Beat >= minBeat && bomb.Beat < maxBeat && !_spawnedBombs.Contains(bomb));
+        
+        var obstaclesToSpawn = _beatmap.Obstacles
+            .Where(obstacle => obstacle.Beat + obstacle.Duration >= minBeat && obstacle.Beat < maxBeat && !_spawnedObstacles.Contains(obstacle));
 
         foreach (var note in notesToSpawn)
         {
@@ -187,11 +242,24 @@ public class MapHandler : MonoBehaviour
             _spawnedNotes.Add(note);
         }
         
-        foreach (Transform child in transform)
+        foreach (var bomb in bombsToSpawn)
         {
-            child.gameObject.GetComponent<ColorNoteObject>().SetTransparent();
+            _mapObjects.SpawnBomb(bomb, editorScale);
+            _spawnedBombs.Add(bomb);
         }
         
-        BeatLines.SpawnBeatLines(currentBeat, editorScale, spawnOffset);
+        foreach (var obstacle in obstaclesToSpawn)
+        {
+            _mapObjects.SpawnObstacle(obstacle, editorScale);
+            _spawnedObstacles.Add(obstacle);
+        }
+        
+        foreach (Transform child in transform)
+        {
+            if (child.gameObject.TryGetComponent<ColorNoteObject>(out var noteObject))
+            {
+                noteObject.SetTransparent();
+            }
+        }
     }
 }
