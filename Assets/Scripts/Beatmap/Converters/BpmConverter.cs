@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UnityEngine;
 using VContainer;
@@ -15,6 +16,21 @@ public class BpmConverter : MonoBehaviour
     {
         AwakeInjector.InjectInto(this, _scope);
     }
+
+    private void Start()
+    {
+        AddStartBpmEvent();
+    }
+
+    private void AddStartBpmEvent()
+    {
+        if (_mapLoader.Beatmap.BpmEvents.FirstOrDefault(x => x.Beat == 0 && x.Multiplier == _mapInfoLoader.Info.BeatsPerMinute) == null)
+        {
+            var startBpmChange = new BpmEvent(){Beat = 0, Multiplier = _mapInfoLoader.Info.BeatsPerMinute};
+            _mapLoader.Beatmap.BpmEvents.Add(startBpmChange);
+        }
+    }
+
     
     public float GetPositionFromBeat(float beat)
     {

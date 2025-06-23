@@ -5,7 +5,7 @@ using UnityEngine;
 [ConfigFileName("Mapping-Config.json")]
 public class MappingConfig : IConfig
 {
-    [SliderRange(10f, 30f)]
+    [SliderRange(10f, 40f)]
     public float EditorScale { get; set; } = 15f;
     [SliderRange(0.75f, 2.5f)]
     public float SpawnOffset { get; set; } = 2f;

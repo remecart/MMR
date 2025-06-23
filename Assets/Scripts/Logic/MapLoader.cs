@@ -134,26 +134,3 @@ public sealed class MapLoader : MonoBehaviour
         return _beatmap;
     }
 }
-
-#if UNITY_EDITOR
-[CustomEditor(typeof(MapLoader)), System.Serializable]
-public class MapLoaderInterface : Editor
-{
-    private string _path = @"C:\Users\manir\BSManager\BSInstances\1.39.1\Beat Saber_Data\CustomLevels\d1aa (Kono spoon, suteki desu ne - Rune)\ExpertPlusStandard.dat"; // temporary hardcode
-
-    public override void OnInspectorGUI()
-    {
-        base.OnInspectorGUI();
-
-        EditorGUILayout.LabelField("Enter Beatmap Path:");
-        _path = EditorGUILayout.TextField(_path);
-
-        var script = target as MapLoader;
-
-        if (GUILayout.Button("Load Map"))
-        {
-            script?.LoadMap(_path);
-        }
-    }
-}
-#endif

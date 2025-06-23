@@ -17,6 +17,9 @@ public class MBotHandler : MonoBehaviour
 
     [AwakeInject]
     private MappingConfig _mappingConfig;
+    
+    [AwakeInject]
+    private MBotConfig _mBotConfig;
 
     [AwakeInject]
     private MapHandler _mapHandler;
@@ -24,10 +27,10 @@ public class MBotHandler : MonoBehaviour
     [AwakeInject]
     private readonly BpmConverter _bpmConverter;
 
-    public float intensity;
-    public float overshoot;
-    public float positionMultiplier;
-    public float planeOffset;
+    private float _intensity => _mBotConfig.Intensity;
+    private float _overshoot => _mBotConfig.Overshoot;
+    private float _positionMultiplier => _mBotConfig.PositionMultiplier;
+    private float _planeOffset => _mBotConfig.PlaneOffset;
 
     public ColorNote NextLeft;
     public ColorNote NextRight;
@@ -88,29 +91,7 @@ public class MBotHandler : MonoBehaviour
     private void UpdateMBot(SaberType saberType, ColorNote lastNote, ColorNote nextNote, float currentBeat,
                             float editorScale, GameObject saber)
     {
-        if (lastNote == null || lastNote.Beat < 0)
-        {
-            lastNote = new ColorNote()
-            {
-                Beat = currentBeat - 1,
-                X = 0,
-                Y = 0,
-                Direction = 0,
-                Angle = 0
-            };
-        }
-
-        if (nextNote == null || nextNote.Beat < 0)
-        {
-            nextNote = new ColorNote()
-            {
-                Beat = currentBeat - 1,
-                X = 0,
-                Y = 0,
-                Direction = 0,
-                Angle = 0
-            };
-        }
+        
 
         var duration = nextNote.Beat - lastNote.Beat;
         var point = Mathf.Clamp01((currentBeat - lastNote.Beat) / duration);
@@ -130,7 +111,7 @@ public class MBotHandler : MonoBehaviour
                                   _bpmConverter.GetPositionFromBeat(nextNote.Beat) * editorScale);
 
         var bezierPos = GetPointOnBezierCurve(lastPos, nextPos, lastAngle, nextAngle, point);
-        var CalculatedPos = new Vector3(bezierPos.x + 0.25f, bezierPos.y, planeOffset);
+        var CalculatedPos = new Vector3(bezierPos.x + 0.25f, bezierPos.y, _planeOffset);
 
         var direction = (CalculatedPos - saber.transform.position).normalized;
 
@@ -148,16 +129,16 @@ public class MBotHandler : MonoBehaviour
             xOffset = -0.8f;
         }
 
-        saber.transform.localPosition = new Vector3((CalculatedPos.x - 2) * positionMultiplier / 10 + xOffset,
-                                                    CalculatedPos.y * positionMultiplier / 10 + 1f, saber.transform.localPosition.z);
+        saber.transform.localPosition = new Vector3((CalculatedPos.x - 2) * _positionMultiplier / 10 + xOffset + 0.4f,
+                                                    CalculatedPos.y * _positionMultiplier / 10 + 1f, saber.transform.localPosition.z);
 
     }
 
     private Vector2 GetPointOnBezierCurve(Vector2 lastNote, Vector2 nextNote, float lastAngle, float nextAngle, float time)
     {
         float distance = (nextNote - lastNote).magnitude;
-        float handleLengthA = distance * 0.3f * intensity + overshoot; // Additive overshoot
-        float handleLengthB = distance * 0.3f * intensity + overshoot; // Additive overshoot
+        float handleLengthA = distance * 0.3f * _intensity + _overshoot; // Additive overshoot
+        float handleLengthB = distance * 0.3f * _intensity + _overshoot; // Additive overshoot
 
         Vector2 controlPointA = lastNote +
                                 new Vector2(Mathf.Cos(lastAngle * Mathf.Deg2Rad), Mathf.Sin(lastAngle * Mathf.Deg2Rad)) *

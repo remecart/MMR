@@ -152,7 +152,7 @@ public class MapObjects : MonoBehaviour
         {
             var zPos = _bpmConverter.GetPositionFromBeat(obstacle.Beat + obstacle.Duration) -
                        _bpmConverter.GetPositionFromBeat(obstacle.Beat);
-            go.transform.localPosition = new Vector3((float)obstacle.X - 1.5f,
+            go.transform.localPosition = new Vector3((float)obstacle.X - 1.5f + (((float)obstacle.Width - 1) * 0.5f),
                 Mathf.Clamp(Mathf.Clamp((float)obstacle.Y, 0f, 2f) + (float)obstacle.Height / 2, 0f, 5.5f) - 0.5f,
                 (_bpmConverter.GetPositionFromBeat(obstacle.Beat) + (zPos / 2)) * editorScale);
             go.transform.localScale = new Vector3(obstacle.Width, obstacle.Height, zPos * editorScale);
