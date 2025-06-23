@@ -539,7 +539,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _notePrefab: {fileID: 652062296108934553, guid: aba2d9d5800dda4469a5ee1e88bb7556, type: 3}
   _bombPrefab: {fileID: 7238816805114343727, guid: a0bc360516730314d8e1911e38e56b28, type: 3}
-  _obstaclePrefab: {fileID: 1952794344245515016, guid: 78fbe20665129d748a146aafdc5efcd5, type: 3}
+  _obstaclePrefab: {fileID: 3179046173221587120, guid: 808e851750de33047991f9cda83ce166, type: 3}
 --- !u!114 &281471561
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1075,7 +1075,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BeatLine: {fileID: 3040912287828008307, guid: f7fb25dde330bc04b803d0123531820b, type: 3}
-  SubBeatLine: {fileID: 0}
+  SubBeatLine: {fileID: 2495310642923061209, guid: 02922162848a38d41add1c95261d8128, type: 3}
   GuideLine: {fileID: 1139600628220007039, guid: 862a841683bc8af44a02971339bf4e97, type: 3}
   cubeMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   cubeMaterial: {fileID: 2100000, guid: f5e126b2501dffb479dab132fbdf3d0e, type: 2}
@@ -1119,7 +1119,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.3283019, g: 0.3283019, b: 0.3283019, a: 0}
+  m_BackGroundColor: {r: 0.13207549, g: 0.13207549, b: 0.13207549, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0

@@ -111,11 +111,9 @@ public class BeatLines : MonoBehaviour
             {
                 if (LineCache.Any(go => Mathf.Abs(float.Parse(go.name) - beat) < 0.0125f))
                 {
-                    Debug.Log($"Skipping beat line for beat: {beat} as it already exists.");
                     continue;
                 }
 
-                Debug.Log($"Spawning beat line for beat: {beat} at position: {_bpmConverter.GetPositionFromBeat(beat) * editorScale}");
                 GameObject go = GetOrCreateBeatLine();
                 go.transform.SetParent(transform.GetChild(0), false);
                 go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale);
@@ -125,7 +123,6 @@ public class BeatLines : MonoBehaviour
             }
             else if (subBeatMatrices.Count < MaxSubBeatCount)
             {
-                Debug.Log($"Spawning sub-beat line for beat: {beat} at position: {_bpmConverter.GetPositionFromBeat(beat) * editorScale}");
                 Vector3 pos = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale - _bpmConverter.GetPositionFromBeat(currentBeat) * editorScale);
                 Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.identity, new Vector3(4f, 0.01f, 0.025f));
                 subBeatMatrices.Add(matrix);

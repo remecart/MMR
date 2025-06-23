@@ -48,10 +48,7 @@ public class MBotHandler : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKey(KeyCode.E))
-        {
-            PlayBot();
-        }
+        PlayBot();
     }
 
     private void PlayBot()
@@ -125,7 +122,7 @@ public class MBotHandler : MonoBehaviour
         {
             return;
         }
-        
+
         var lastPos = new Vector3((float) lastNote.X - 1.5f, (float) lastNote.Y + 0.5f,
                                   _bpmConverter.GetPositionFromBeat(lastNote.Beat) * editorScale);
 
