@@ -1,8 +1,12 @@
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine.Networking;
+using VContainer;
+using VContainer.Unity;
+using Object = UnityEngine.Object;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -10,9 +14,17 @@ using UnityEditor;
 
 public class BeatSaberCustomSaberLoader : MonoBehaviour
 {
+    private readonly static int CustomColor = Shader.PropertyToID("_CustomColors");
+
     [Header("Saber Directory")]
     [SerializeField]
     private string saberDirectoryPath = "C:/CustomSabers/";
+
+    [Inject]
+    private readonly LifetimeScope _scope;
+
+    [AwakeInject]
+    private readonly NoteColorConfig _noteColorConfig;
 
     [Header("Current Saber")]
     [SerializeField]
@@ -42,6 +54,11 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
     private GameObject currentLeftSaber;
     private GameObject currentRightSaber;
     private AssetBundle currentBundle;
+
+    private void Awake()
+    {
+        AwakeInjector.InjectInto(this, _scope);
+    }
 
     void Start()
     {
@@ -93,7 +110,6 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
         if (showDebugInfo)
         {
             Debug.Log($"🔍 {saberBundlePaths.Count} Saber-Bundles gefunden:");
-
         }
 
         for (int i = 0; i < saberBundlePaths.Count; i++)
@@ -201,6 +217,20 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                                 currentLeftSaber.transform.localScale = new Vector3(12, 12, 12);
                                 currentLeftSaber.transform.localPosition = new Vector3(0, 0, 2f);
                                 currentLeftSaber.name = $"LeftSaber_{prefab.name}";
+                                Renderer[] renderers = currentLeftSaber.GetComponentsInChildren<Renderer>();
+                                foreach (Renderer renderer in renderers)
+                                {
+                                    foreach (var mat in renderer.materials)
+                                    {
+                                        if (mat.HasProperty(CustomColor) && mat.GetFloat(CustomColor) == 1)
+                                        {
+                                            // Prüfe, ob es sich um das linke oder rechte Schwert handelt
+                                            bool isLeftSaber = currentLeftSaber != null &&
+                                                               renderer.gameObject.transform.IsChildOf(currentLeftSaber.transform);
+                                            mat.color = isLeftSaber ? _noteColorConfig.LeftColor : _noteColorConfig.RightColor;
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -216,6 +246,22 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                                 currentRightSaber.transform.localScale = new Vector3(12, 12, 12);
                                 currentRightSaber.transform.localPosition = new Vector3(0, 0, 2f);
                                 currentRightSaber.name = $"RightSaber_{prefab.name}";
+
+                                // Iterate over all the materials in the RightSaber + Children
+                                Renderer[] renderers = currentRightSaber.GetComponentsInChildren<Renderer>();
+                                foreach (Renderer renderer in renderers)
+                                {
+                                    foreach (var mat in renderer.materials)
+                                    {
+                                        if (mat.HasProperty(CustomColor) && mat.GetFloat(CustomColor) == 1)
+                                        {
+                                            // Prüfe, ob es sich um das linke oder rechte Schwert handelt
+                                            bool isLeftSaber = currentLeftSaber != null &&
+                                                               renderer.gameObject.transform.IsChildOf(currentLeftSaber.transform);
+                                            mat.color = isLeftSaber ? _noteColorConfig.LeftColor : _noteColorConfig.RightColor;
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -230,10 +276,10 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                                 Debug.Log($"👉 RightSaber angehängt an: {rightHandParent.name}");
                         }
 
-#if UNITY_EDITOR
+                        #if UNITY_EDITOR
                         if (currentLeftSaber != null)
                             UnityEditor.Selection.activeGameObject = currentLeftSaber;
-#endif
+                        #endif
                     }
                     else
                     {
@@ -403,7 +449,7 @@ public class BeatSaberCustomSaberLoaderEditor : Editor
 
     void OnEnable()
     {
-        loader = (BeatSaberCustomSaberLoader) target;
+        loader = (BeatSaberCustomSaberLoader)target;
     }
 
     public override void OnInspectorGUI()
