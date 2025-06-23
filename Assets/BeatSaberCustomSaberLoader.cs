@@ -11,28 +11,38 @@ using UnityEditor;
 public class BeatSaberCustomSaberLoader : MonoBehaviour
 {
     [Header("Saber Directory")]
-    [SerializeField] private string saberDirectoryPath = "C:/CustomSabers/";
-    
-    [Header("Current Saber")]
-    [SerializeField] public int currentSaberIndex = 0;
-    [SerializeField] private string currentSaberName = "Default";
-    
-    [Header("Saber Settings")]
-    [SerializeField] private Transform leftHandParent;
-    [SerializeField] private Transform rightHandParent;
-    [SerializeField] private Vector3 spawnPosition = Vector3.zero;
-    [SerializeField] private bool autoLoadOnStart = true;
-    
+    [SerializeField]
+    private string saberDirectoryPath = "C:/CustomSabers/";
 
-    
+    [Header("Current Saber")]
+    [SerializeField]
+    public int currentSaberIndex = 0;
+
+    [SerializeField]
+    private string currentSaberName = "Default";
+
+    [Header("Saber Settings")]
+    [SerializeField]
+    private Transform leftHandParent;
+
+    [SerializeField]
+    private Transform rightHandParent;
+
+    [SerializeField]
+    private Vector3 spawnPosition = Vector3.zero;
+
+    [SerializeField]
+    private bool autoLoadOnStart = true;
+
     [Header("Debug Info")]
-    [SerializeField] private bool showDebugInfo = true;
-    
+    [SerializeField]
+    private bool showDebugInfo = true;
+
     private List<string> saberBundlePaths = new List<string>();
     private GameObject currentLeftSaber;
     private GameObject currentRightSaber;
     private AssetBundle currentBundle;
-    
+
     void Start()
     {
         if (autoLoadOnStart)
@@ -44,7 +54,7 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
             }
         }
     }
-    
+
     void OnValidate()
     {
         // Index validieren
@@ -53,120 +63,130 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
             currentSaberIndex = Mathf.Clamp(currentSaberIndex, 0, saberBundlePaths.Count - 1);
         }
     }
-    
+
     [ContextMenu("Scan Directory")]
     public void ScanForSaberBundles()
     {
         saberBundlePaths.Clear();
-        
+
         if (!Directory.Exists(saberDirectoryPath))
         {
             Debug.LogError($"❌ Verzeichnis nicht gefunden: {saberDirectoryPath}");
+
             return;
         }
-        
+
         // Suche nach AssetBundle-Dateien (meist ohne Endung oder .bundle)
         string[] allFiles = Directory.GetFiles(saberDirectoryPath, "*", SearchOption.AllDirectories);
-        
+
         foreach (string filePath in allFiles)
         {
             string extension = Path.GetExtension(filePath).ToLower();
-            
+
             // AssetBundles haben meist keine Endung oder .bundle/.saber
             if (string.IsNullOrEmpty(extension) || extension == ".bundle" || extension == ".saber")
             {
                 saberBundlePaths.Add(filePath);
             }
         }
-        
-        Debug.Log($"🔍 {saberBundlePaths.Count} Saber-Bundles gefunden:");
+
+        if (showDebugInfo)
+        {
+            Debug.Log($"🔍 {saberBundlePaths.Count} Saber-Bundles gefunden:");
+
+        }
+
         for (int i = 0; i < saberBundlePaths.Count; i++)
         {
             string fileName = Path.GetFileNameWithoutExtension(saberBundlePaths[i]);
-            Debug.Log($"  {i}: {fileName}");
+            if (showDebugInfo)
+                Debug.Log($"  {i}: {fileName}");
         }
-        
+
         // Index zurücksetzen wenn nötig
         if (currentSaberIndex >= saberBundlePaths.Count)
         {
             currentSaberIndex = 0;
         }
-        
+
         UpdateCurrentSaberName();
     }
-    
+
     public void LoadSaberAtIndex(int index)
     {
         if (saberBundlePaths.Count == 0)
         {
             Debug.LogWarning("⚠️ Keine Saber gefunden! Erst 'Scan Directory' ausführen.");
+
             return;
         }
-        
+
         if (index < 0 || index >= saberBundlePaths.Count)
         {
             Debug.LogError($"❌ Ungültiger Index: {index} (0-{saberBundlePaths.Count - 1})");
+
             return;
         }
-        
+
         currentSaberIndex = index;
         StartCoroutine(LoadSaberCoroutine(saberBundlePaths[index]));
     }
-    
+
     public void NextSaber()
     {
         if (saberBundlePaths.Count == 0) return;
-        
+
         int nextIndex = (currentSaberIndex + 1) % saberBundlePaths.Count;
         LoadSaberAtIndex(nextIndex);
-        
+
         if (showDebugInfo)
             Debug.Log($"➡️ Nächster Saber: {nextIndex}/{saberBundlePaths.Count - 1}");
     }
-    
+
     public void PreviousSaber()
     {
         if (saberBundlePaths.Count == 0) return;
-        
+
         int prevIndex = (currentSaberIndex - 1 + saberBundlePaths.Count) % saberBundlePaths.Count;
         LoadSaberAtIndex(prevIndex);
-        
+
         if (showDebugInfo)
             Debug.Log($"⬅️ Vorheriger Saber: {prevIndex}/{saberBundlePaths.Count - 1}");
     }
-    
+
     IEnumerator LoadSaberCoroutine(string bundlePath)
     {
         if (showDebugInfo)
             Debug.Log($"🔄 Lade Saber: {Path.GetFileNameWithoutExtension(bundlePath)}");
-        
+
         // Alten Saber entfernen
         UnloadCurrentSaber();
-        
+
         // Bundle laden
         string bundleURL = "file://" + bundlePath.Replace("\\", "/");
         UnityWebRequest request = UnityWebRequestAssetBundle.GetAssetBundle(bundleURL);
+
         yield return request.SendWebRequest();
-        
+
         if (request.result == UnityWebRequest.Result.Success)
         {
             currentBundle = DownloadHandlerAssetBundle.GetContent(request);
-            
+
             // Erstes GameObject im Bundle finden und laden
             string[] assetNames = currentBundle.GetAllAssetNames();
-            
+
             foreach (string assetName in assetNames)
             {
                 Object asset = currentBundle.LoadAsset(assetName);
-                
+
                 if (asset is GameObject)
                 {
                     GameObject prefab = asset as GameObject;
-                    
+
                     // Suche LeftSaber und RightSaber im Prefab
                     Transform leftSaberPrefab = FindChildRecursive(prefab.transform, "LeftSaber");
                     Transform rightSaberPrefab = FindChildRecursive(prefab.transform, "RightSaber");
-                    
+
                     if (leftSaberPrefab != null && rightSaberPrefab != null)
                     {
                         // LeftSaber instanziieren und an LeftHand anhängen
@@ -183,7 +203,7 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                                 currentLeftSaber.name = $"LeftSaber_{prefab.name}";
                             }
                         }
-                        
+
                         // RightSaber instanziieren und an RightHand anhängen
                         if (rightHandParent != null)
                         {
@@ -198,9 +218,9 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                                 currentRightSaber.name = $"RightSaber_{prefab.name}";
                             }
                         }
-                        
+
                         UpdateCurrentSaberName();
-                        
+
                         if (showDebugInfo)
                         {
                             Debug.Log($"✅ Saber geladen: {currentSaberName}");
@@ -209,11 +229,11 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                             if (currentRightSaber != null && rightHandParent != null)
                                 Debug.Log($"👉 RightSaber angehängt an: {rightHandParent.name}");
                         }
-                        
-                        #if UNITY_EDITOR
+
+#if UNITY_EDITOR
                         if (currentLeftSaber != null)
                             UnityEditor.Selection.activeGameObject = currentLeftSaber;
-                        #endif
+#endif
                     }
                     else
                     {
@@ -224,7 +244,7 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                             LogAllChildren(prefab.transform, 0);
                         }
                     }
-                    
+
                     break; // Nur das erste GameObject analysieren
                 }
             }
@@ -234,7 +254,7 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
             Debug.LogError($"❌ Fehler beim Laden: {request.error}");
         }
     }
-    
+
     void UnloadCurrentSaber()
     {
         // LeftSaber zerstören
@@ -242,7 +262,7 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
         {
             if (showDebugInfo)
                 Debug.Log($"🗑️ Entferne LeftSaber: {currentLeftSaber.name}");
-            
+
             try
             {
                 DestroyImmediate(currentLeftSaber);
@@ -256,13 +276,13 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                 currentLeftSaber = null;
             }
         }
-        
+
         // RightSaber zerstören
         if (currentRightSaber != null)
         {
             if (showDebugInfo)
                 Debug.Log($"🗑️ Entferne RightSaber: {currentRightSaber.name}");
-            
+
             try
             {
                 DestroyImmediate(currentRightSaber);
@@ -276,7 +296,7 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
                 currentRightSaber = null;
             }
         }
-        
+
         // Bundle freigeben
         if (currentBundle != null)
         {
@@ -294,44 +314,46 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
             }
         }
     }
-    
+
     void OrganizeSaberChildren(GameObject saberRoot)
     {
         // Diese Funktion wird nicht mehr benötigt - jetzt direkt extrahiert
     }
-    
+
     void LogAllChildren(Transform parent, int depth)
     {
         string indent = new string(' ', depth * 2);
         Debug.Log($"{indent}- {parent.name}");
-        
+
         for (int i = 0; i < parent.childCount; i++)
         {
             LogAllChildren(parent.GetChild(i), depth + 1);
         }
     }
-    
+
     Transform FindChildRecursive(Transform parent, string childName)
     {
         // Direkte Kinder durchsuchen
         for (int i = 0; i < parent.childCount; i++)
         {
             Transform child = parent.GetChild(i);
+
             if (child.name.Contains(childName))
                 return child;
         }
-        
+
         // Rekursiv in Kindern suchen
         for (int i = 0; i < parent.childCount; i++)
         {
             Transform found = FindChildRecursive(parent.GetChild(i), childName);
+
             if (found != null)
                 return found;
         }
-        
+
         return null;
     }
-    
+
     void UpdateCurrentSaberName()
     {
         if (saberBundlePaths.Count > 0 && currentSaberIndex < saberBundlePaths.Count)
@@ -343,7 +365,7 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
             currentSaberName = "None";
         }
     }
-    
+
     // Keyboard Controls (optional)
     void Update()
     {
@@ -360,12 +382,12 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
             LoadSaberAtIndex(currentSaberIndex); // Reload current
         }
     }
-    
+
     void OnDestroy()
     {
         UnloadCurrentSaber();
     }
-    
+
     // Public API für andere Scripts
     public int GetSaberCount() => saberBundlePaths.Count;
     public string GetCurrentSaberName() => currentSaberName;
@@ -378,51 +400,52 @@ public class BeatSaberCustomSaberLoader : MonoBehaviour
 public class BeatSaberCustomSaberLoaderEditor : Editor
 {
     private BeatSaberCustomSaberLoader loader;
-    
+
     void OnEnable()
     {
-        loader = (BeatSaberCustomSaberLoader)target;
+        loader = (BeatSaberCustomSaberLoader) target;
     }
-    
+
     public override void OnInspectorGUI()
     {
         // Standard Inspector zeichnen
         DrawDefaultInspector();
-        
+
         EditorGUILayout.Space(20);
-        
+
         // Schönes GUI für Controls
         EditorGUILayout.BeginVertical("box");
-        
+
         // Header
         GUIStyle headerStyle = new GUIStyle(EditorStyles.boldLabel);
         headerStyle.fontSize = 14;
         headerStyle.normal.textColor = new Color(0.3f, 0.8f, 1f);
         EditorGUILayout.LabelField("🗡️ Beat Saber Controls", headerStyle);
-        
+
         EditorGUILayout.Space(10);
-        
+
         // Directory Scan Button
         GUI.backgroundColor = Color.cyan;
         if (GUILayout.Button("🔍 Scan Saber Directory", GUILayout.Height(30)))
         {
             loader.ScanForSaberBundles();
         }
+
         GUI.backgroundColor = Color.white;
-        
+
         EditorGUILayout.Space(5);
-        
+
         // Info Box
         if (loader.GetSaberCount() > 0)
         {
             EditorGUILayout.BeginVertical("helpbox");
             EditorGUILayout.LabelField($"📦 Gefundene Saber: {loader.GetSaberCount()}");
             EditorGUILayout.LabelField($"🎯 Aktueller Saber: {loader.GetCurrentSaberName()}");
-            
+
             // Parent Info anzeigen
             var leftHandParent = serializedObject.FindProperty("leftHandParent").objectReferenceValue as Transform;
             var rightHandParent = serializedObject.FindProperty("rightHandParent").objectReferenceValue as Transform;
-            
+
             if (leftHandParent != null && rightHandParent != null)
             {
                 EditorGUILayout.LabelField($"👈 Left Hand: {leftHandParent.name}");
@@ -432,19 +455,19 @@ public class BeatSaberCustomSaberLoaderEditor : Editor
             {
                 EditorGUILayout.LabelField("⚠️ Left/Right Hand Parents nicht gesetzt!", EditorStyles.miniLabel);
             }
-            
+
             EditorGUILayout.EndVertical();
         }
         else
         {
             EditorGUILayout.HelpBox("Keine Saber gefunden! Verzeichnis scannen.", MessageType.Warning);
         }
-        
+
         EditorGUILayout.Space(10);
-        
+
         // Navigation Buttons
         EditorGUILayout.BeginHorizontal();
-        
+
         // Previous Button
         GUI.backgroundColor = new Color(1f, 0.6f, 0.6f);
         GUI.enabled = loader.GetSaberCount() > 0;
@@ -452,40 +475,40 @@ public class BeatSaberCustomSaberLoaderEditor : Editor
         {
             loader.PreviousSaber();
         }
-        
+
         // Reload Button
         GUI.backgroundColor = new Color(1f, 1f, 0.6f);
         if (GUILayout.Button("🔄 Reload", GUILayout.Height(25)))
         {
             loader.LoadSaberAtIndex(loader.GetComponent<BeatSaberCustomSaberLoader>().currentSaberIndex);
         }
-        
+
         // Next Button
         GUI.backgroundColor = new Color(0.6f, 1f, 0.6f);
         if (GUILayout.Button("Next ➡️", GUILayout.Height(25)))
         {
             loader.NextSaber();
         }
-        
+
         GUI.backgroundColor = Color.white;
         GUI.enabled = true;
         EditorGUILayout.EndHorizontal();
-        
+
         EditorGUILayout.Space(10);
-        
+
         // Quick Load Buttons
         if (loader.GetSaberCount() > 0)
         {
             EditorGUILayout.LabelField("⚡ Quick Load:", EditorStyles.miniBoldLabel);
-            
+
             EditorGUILayout.BeginHorizontal();
-            
+
             // Zeige erste 5 Saber als Buttons
             int maxButtons = Mathf.Min(5, loader.GetSaberCount());
             for (int i = 0; i < maxButtons; i++)
             {
                 string buttonText = $"{i}";
-                
+
                 // Aktueller Saber bekommt andere Farbe
                 if (i == loader.GetComponent<BeatSaberCustomSaberLoader>().currentSaberIndex)
                 {
@@ -495,33 +518,33 @@ public class BeatSaberCustomSaberLoaderEditor : Editor
                 {
                     GUI.backgroundColor = Color.white;
                 }
-                
+
                 if (GUILayout.Button(buttonText, GUILayout.Width(30), GUILayout.Height(20)))
                 {
                     loader.LoadSaberAtIndex(i);
                 }
             }
-            
+
             GUI.backgroundColor = Color.white;
             EditorGUILayout.EndHorizontal();
-            
+
             if (loader.GetSaberCount() > 5)
             {
                 EditorGUILayout.LabelField($"... und {loader.GetSaberCount() - 5} weitere", EditorStyles.miniLabel);
             }
         }
-        
+
         EditorGUILayout.Space(10);
-        
+
         // Keyboard Hints
         EditorGUILayout.BeginVertical("helpbox");
         EditorGUILayout.LabelField("⌨️ Keyboard Shortcuts:", EditorStyles.miniBoldLabel);
         EditorGUILayout.LabelField("← → Pfeiltasten: Saber wechseln");
         EditorGUILayout.LabelField("R: Aktuellen Saber neu laden");
         EditorGUILayout.EndVertical();
-        
+
         EditorGUILayout.EndVertical();
-        
+
         // Auto-Update bei Änderungen
         if (GUI.changed)
         {

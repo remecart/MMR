@@ -6,24 +6,29 @@ using VContainer.Unity;
 
 public class MBotHandler : MonoBehaviour
 {
-    [Inject] private readonly LifetimeScope _scope;
-    
-    [FormerlySerializedAs("MapLoader")] public MapLoader mapLoader;
+    [Inject]
+    private readonly LifetimeScope _scope;
 
-    [AwakeInject] private MapObjects _mapObjects;
+    [AwakeInject]
+    private MapLoader _mapLoader;
 
-    [AwakeInject] private MappingConfig _mappingConfig;
+    [AwakeInject]
+    private MapObjects _mapObjects;
 
-    [FormerlySerializedAs("_mapHandler")] public MapHandler mapHandler;
+    [AwakeInject]
+    private MappingConfig _mappingConfig;
 
-    [AwakeInject] private readonly BpmConverter _bpmConverter;
+    [AwakeInject]
+    private MapHandler _mapHandler;
+
+    [AwakeInject]
+    private readonly BpmConverter _bpmConverter;
 
     public float intensity;
     public float overshoot;
     public float positionMultiplier;
     public float planeOffset;
-    
-    
+
     public ColorNote NextLeft;
     public ColorNote NextRight;
     public ColorNote LastLeft;
@@ -33,7 +38,7 @@ public class MBotHandler : MonoBehaviour
 
     public Transform LeftSaber;
     public Transform RightSaber;
-    
+
     public Quaternion targetRotation;
 
     private void Awake()
@@ -43,7 +48,10 @@ public class MBotHandler : MonoBehaviour
 
     private void Update()
     {
-        PlayBot();
+        if (Input.GetKey(KeyCode.E))
+        {
+            PlayBot();
+        }
     }
 
     private void PlayBot()
@@ -53,30 +61,58 @@ public class MBotHandler : MonoBehaviour
             return;
         }
 
-        if (mapHandler.CurrentBeat == null)
+        if (_mapHandler.CurrentBeat == null)
             return;
 
-        var currentBeat = mapHandler.CurrentBeat.Value;
+        var currentBeat = _mapHandler.CurrentBeat.Value;
         var editorScale = _mappingConfig.EditorScale;
 
         GetLastNotes(currentBeat);
         GetNextNotes(currentBeat);
+
+        if (LastLeft == null || LastRight == null || NextLeft == null || NextRight == null)
+        {
+            Debug.LogWarning("One or more notes are null, skipping update.");
+
+            return;
+        }
+
+        if (LeftSaber == null || RightSaber == null)
+        {
+            Debug.LogError("Left or Right Saber is not assigned.");
+
+            return;
+        }
 
         UpdateMBot(SaberType.Left, LastLeft, NextLeft, currentBeat, editorScale, LeftSaber.gameObject);
         UpdateMBot(SaberType.Right, LastRight, NextRight, currentBeat, editorScale, RightSaber.gameObject);
     }
 
     private void UpdateMBot(SaberType saberType, ColorNote lastNote, ColorNote nextNote, float currentBeat,
-        float editorScale, GameObject saber)
+                            float editorScale, GameObject saber)
     {
-        if (lastNote == null)
+        if (lastNote == null || lastNote.Beat < 0)
         {
-            lastNote = new ColorNote();
+            lastNote = new ColorNote()
+            {
+                Beat = currentBeat - 1,
+                X = 0,
+                Y = 0,
+                Direction = 0,
+                Angle = 0
+            };
         }
 
-        if (nextNote == null)
+        if (nextNote == null || nextNote.Beat < 0)
         {
-            nextNote = new ColorNote();
+            nextNote = new ColorNote()
+            {
+                Beat = currentBeat - 1,
+                X = 0,
+                Y = 0,
+                Direction = 0,
+                Angle = 0
+            };
         }
 
         var duration = nextNote.Beat - lastNote.Beat;
@@ -84,38 +120,43 @@ public class MBotHandler : MonoBehaviour
 
         var lastAngle = _mapObjects.Rotation(lastNote.Direction) + lastNote.Angle - 90;
         var nextAngle = _mapObjects.Rotation(nextNote.Direction) + nextNote.Angle + 90;
+
+        if (lastNote.X is null || lastNote.Y is null || nextNote.X is null || nextNote.Y is null)
+        {
+            return;
+        }
         
-        var lastPos = new Vector3((float)lastNote.X - 1.5f, (float)lastNote.Y + 0.5f,
-            _bpmConverter.GetPositionFromBeat(lastNote.Beat) * editorScale);
-        
-        var nextPos = new Vector3((float)nextNote.X - 1.5f, (float)nextNote.Y + 0.5f,
-            _bpmConverter.GetPositionFromBeat(nextNote.Beat) * editorScale);
-        
+        var lastPos = new Vector3((float) lastNote.X - 1.5f, (float) lastNote.Y + 0.5f,
+                                  _bpmConverter.GetPositionFromBeat(lastNote.Beat) * editorScale);
+
+        var nextPos = new Vector3((float) nextNote.X - 1.5f, (float) nextNote.Y + 0.5f,
+                                  _bpmConverter.GetPositionFromBeat(nextNote.Beat) * editorScale);
+
         var bezierPos = GetPointOnBezierCurve(lastPos, nextPos, lastAngle, nextAngle, point);
-        var CalculatedPos = new Vector3(bezierPos.x + 0.25f, bezierPos.y , planeOffset);
+        var CalculatedPos = new Vector3(bezierPos.x + 0.25f, bezierPos.y, planeOffset);
 
         var direction = (CalculatedPos - saber.transform.position).normalized;
-        
+
         if (direction != Vector3.zero)
         {
             targetRotation = Quaternion.LookRotation(direction);
         }
-        
+
         saber.transform.rotation = Quaternion.Slerp(saber.transform.rotation, targetRotation, point);
 
         var xOffset = 0.8f;
-        
+
         if (saberType == SaberType.Left)
         {
             xOffset = -0.8f;
         }
-        
+
         saber.transform.localPosition = new Vector3((CalculatedPos.x - 2) * positionMultiplier / 10 + xOffset,
-            CalculatedPos.y * positionMultiplier / 10 + 1f, saber.transform.localPosition.z);
+                                                    CalculatedPos.y * positionMultiplier / 10 + 1f, saber.transform.localPosition.z);
 
     }
 
-    public Vector2 GetPointOnBezierCurve(Vector2 lastNote, Vector2 nextNote, float lastAngle, float nextAngle, float time)
+    private Vector2 GetPointOnBezierCurve(Vector2 lastNote, Vector2 nextNote, float lastAngle, float nextAngle, float time)
     {
         float distance = (nextNote - lastNote).magnitude;
         float handleLengthA = distance * 0.3f * intensity + overshoot; // Additive overshoot
@@ -136,27 +177,39 @@ public class MBotHandler : MonoBehaviour
 
     private void GetLastNotes(float currentBeat)
     {
-        LastLeft = mapLoader.Beatmap.ColorNotes
-            .Where(note => note.Beat <= currentBeat && note.SaberType == SaberType.Left)
-            .OrderByDescending(note => note.Beat)
-            .FirstOrDefault() ?? new ColorNote { Beat = currentBeat - 1 };
+        LastLeft = _mapLoader.Beatmap.ColorNotes
+                             .Where(note => note.Beat <= currentBeat && note.SaberType == SaberType.Left)
+                             .OrderByDescending(note => note.Beat)
+                             .FirstOrDefault() ?? new ColorNote
+        {
+            Beat = currentBeat - 1
+        };
 
-        LastRight = mapLoader.Beatmap.ColorNotes
-            .Where(note => note.Beat <= currentBeat && note.SaberType == SaberType.Right)
-            .OrderByDescending(note => note.Beat)
-            .FirstOrDefault() ?? new ColorNote { Beat = currentBeat - 1 };
+        LastRight = _mapLoader.Beatmap.ColorNotes
+                              .Where(note => note.Beat <= currentBeat && note.SaberType == SaberType.Right)
+                              .OrderByDescending(note => note.Beat)
+                              .FirstOrDefault() ?? new ColorNote
+        {
+            Beat = currentBeat - 1
+        };
     }
 
     private void GetNextNotes(float currentBeat)
     {
-        NextLeft = mapLoader.Beatmap.ColorNotes
-            .Where(note => note.Beat >= currentBeat && note.SaberType == SaberType.Left)
-            .OrderBy(note => note.Beat)
-            .FirstOrDefault() ?? new ColorNote { Beat = currentBeat + 1 };
+        NextLeft = _mapLoader.Beatmap.ColorNotes
+                             .Where(note => note.Beat >= currentBeat && note.SaberType == SaberType.Left)
+                             .OrderBy(note => note.Beat)
+                             .FirstOrDefault() ?? new ColorNote
+        {
+            Beat = currentBeat + 1
+        };
 
-        NextRight = mapLoader.Beatmap.ColorNotes
-            .Where(note => note.Beat >= currentBeat && note.SaberType == SaberType.Right)
-            .OrderBy(note => note.Beat)
-            .FirstOrDefault() ?? new ColorNote { Beat = currentBeat + 1 };
+        NextRight = _mapLoader.Beatmap.ColorNotes
+                              .Where(note => note.Beat >= currentBeat && note.SaberType == SaberType.Right)
+                              .OrderBy(note => note.Beat)
+                              .FirstOrDefault() ?? new ColorNote
+        {
+            Beat = currentBeat + 1
+        };
     }
 }

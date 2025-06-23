@@ -276,7 +276,7 @@ Transform:
   m_GameObject: {fileID: 204034576}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1469.2128, y: -666.4202, z: 1392.5261}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -294,14 +294,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58a73fa801fb33d4886b861d53529cef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  saberDirectoryPath: C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\CustomSabers
-  currentSaberIndex: 1
-  currentSaberName: Default
+  saberDirectoryPath: C:\Users\manir\BSManager\BSInstances\1.39.1\CustomSabers
+  currentSaberIndex: 0
+  currentSaberName: Lollp's - Shadow
   leftHandParent: {fileID: 327180358}
   rightHandParent: {fileID: 495595561}
   spawnPosition: {x: 0, y: 0, z: 0}
   autoLoadOnStart: 1
-  showDebugInfo: 1
+  showDebugInfo: 0
 --- !u!1 &217859882
 GameObject:
   m_ObjectHideFlags: 0
@@ -445,7 +445,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioSource: {fileID: 217859884}
   songSpeed: 0
-  dontLoadAudio: 0
   audioDelay: 0
 --- !u!1 &227445814
 GameObject:
@@ -582,7 +581,7 @@ GameObject:
   - component: {fileID: 301800311}
   - component: {fileID: 301800312}
   m_Layer: 0
-  m_Name: ReadMapInfo
+  m_Name: MapInfoLoader
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -615,26 +614,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 649e9e68528c9a74181fcfcf2fc8755f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  info:
-    _version: 2.1.0
-    _songName: 
-    _songSubName: 
-    _songAuthorName: 
-    _levelAuthorName: 
-    _beatsPerMinute: 100
-    _shuffle: 0
-    _shufflePeriod: 0
-    _previewStartTime: 0
-    _previewDuration: 10
-    _songFilename: 
-    _coverImageFilename: 
-    _environmentName: DefaultEnvironment
-    _songTimeOffset: 0
-    _customData:
-      _editors:
-        _lastEditedBy: Micro Mapper
-    _difficultyBeatmapSets: []
-  folderPath: C:\Users\Remec\Downloads\24aea (Dimension - Water)
+  folderPath: C:\Users\manir\BSManager\BSInstances\1.39.1\Beat Saber_Data\CustomLevels\478cc
+    (BIG SHOT - oermergeesh)
 --- !u!1 &327180357
 GameObject:
   m_ObjectHideFlags: 0
@@ -964,8 +945,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9637dc738f9925c47bbae5ef5efe10a8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapLoader: {fileID: 9126445719317506567}
-  mapHandler: {fileID: 281471561}
   intensity: 1
   overshoot: 2.48
   positionMultiplier: 1.38
@@ -1140,7 +1119,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.084905684, g: 0.084905684, b: 0.084905684, a: 0}
+  m_BackGroundColor: {r: 0.3283019, g: 0.3283019, b: 0.3283019, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1217,7 +1196,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: de2d6c4733df1404fb821b0e2249e35a, type: 3}
   m_Name: 
@@ -1574,7 +1553,7 @@ Transform:
   m_GameObject: {fileID: 2058534515}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -11.346094, y: -2.9643497, z: 14.863981}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1666,11 +1645,13 @@ MonoBehaviour:
   - {fileID: 301800310}
   - {fileID: 1160224729}
   - {fileID: 217859882}
+  - {fileID: 561505698}
   _mapLoader: {fileID: 9126445719317506567}
   _mapObjects: {fileID: 281471560}
-  _readMapInfo: {fileID: 301800312}
+  _mapInfoLoader: {fileID: 301800312}
   _bpmConverter: {fileID: 1160224731}
   _songLoader: {fileID: 217859885}
+  _mapHandler: {fileID: 281471561}
 --- !u!114 &9126445719317506567
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1687,7 +1668,6 @@ MonoBehaviour:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 204034578}
   - {fileID: 1160224730}
   - {fileID: 14951483}
   - {fileID: 2058534516}
@@ -1695,3 +1675,4 @@ SceneRoots:
   - {fileID: 465239628}
   - {fileID: 227445816}
   - {fileID: 882632682}
+  - {fileID: 204034578}

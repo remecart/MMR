@@ -1,17 +1,17 @@
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
 public class BeatLines : MonoBehaviour
 {
-    [Inject] private readonly LifetimeScope _scope;
-    [AwakeInject] private BpmConverter _bpmConverter;
+    [Inject]
+    private readonly LifetimeScope _scope;
+
+    [AwakeInject]
+    private BpmConverter _bpmConverter;
 
     public GameObject BeatLine;
     public GameObject SubBeatLine;
@@ -19,7 +19,7 @@ public class BeatLines : MonoBehaviour
 
     public Mesh cubeMesh;
     public Material cubeMaterial;
-    
+
     public List<GameObject> LineCache;
 
     public List<Matrix4x4> subBeatMatrices = new();
@@ -40,7 +40,10 @@ public class BeatLines : MonoBehaviour
 
         if (cubeMaterial == null)
         {
-            cubeMaterial = new Material(Shader.Find("Standard")) { enableInstancing = true };
+            cubeMaterial = new Material(Shader.Find("Standard"))
+            {
+                enableInstancing = true
+            };
         }
     }
 
@@ -54,11 +57,11 @@ public class BeatLines : MonoBehaviour
         if (subBeatMatrices.Count > 0)
         {
             Graphics.DrawMeshInstanced(
-                cubeMesh,
-                0,
-                cubeMaterial,
-                subBeatMatrices
-            );
+                                       cubeMesh,
+                                       0,
+                                       cubeMaterial,
+                                       subBeatMatrices
+                                      );
         }
     }
 
@@ -87,7 +90,7 @@ public class BeatLines : MonoBehaviour
         _lastBeat = -1f;
         _lastOffset = -1f;
     }
-    
+
     public void SpawnBeatLines(float currentBeat, float editorScale, float spawnOffset, int precision)
     {
         if (Mathf.Approximately(currentBeat, _lastBeat) && Mathf.Approximately(spawnOffset, _lastOffset)) return;
@@ -106,18 +109,23 @@ public class BeatLines : MonoBehaviour
         {
             if (Mathf.Abs(Mathf.Round(beat) - beat) < 0.01f)
             {
-                if (!LineCache.Any(go => Mathf.Abs(float.Parse(go.name) - beat) < 0.0125f))
+                if (LineCache.Any(go => Mathf.Abs(float.Parse(go.name) - beat) < 0.0125f))
                 {
-                    GameObject go = GetOrCreateBeatLine();
-                    go.transform.SetParent(transform.GetChild(0), false);
-                    go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale);
-                    go.name = $"{beat}";
-                    go.GetComponentInChildren<TextMeshPro>().text = Mathf.RoundToInt(beat).ToString();
-                    LineCache.Add(go);
+                    Debug.Log($"Skipping beat line for beat: {beat} as it already exists.");
+                    continue;
                 }
+
+                Debug.Log($"Spawning beat line for beat: {beat} at position: {_bpmConverter.GetPositionFromBeat(beat) * editorScale}");
+                GameObject go = GetOrCreateBeatLine();
+                go.transform.SetParent(transform.GetChild(0), false);
+                go.transform.localPosition = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale);
+                go.name = $"{beat}";
+                go.GetComponentInChildren<TextMeshPro>().text = Mathf.RoundToInt(beat).ToString();
+                LineCache.Add(go);
             }
             else if (subBeatMatrices.Count < MaxSubBeatCount)
             {
+                Debug.Log($"Spawning sub-beat line for beat: {beat} at position: {_bpmConverter.GetPositionFromBeat(beat) * editorScale}");
                 Vector3 pos = new Vector3(0, 0, _bpmConverter.GetPositionFromBeat(beat) * editorScale - _bpmConverter.GetPositionFromBeat(currentBeat) * editorScale);
                 Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.identity, new Vector3(4f, 0.01f, 0.025f));
                 subBeatMatrices.Add(matrix);
@@ -134,6 +142,7 @@ public class BeatLines : MonoBehaviour
         {
             GameObject pooled = beatLinePool.Dequeue();
             pooled.SetActive(true);
+
             return pooled;
         }
 
@@ -143,8 +152,8 @@ public class BeatLines : MonoBehaviour
     private void DespawnBeatLines(float minBeat, float maxBeat)
     {
         var toDespawn = LineCache
-            .Where(line => float.TryParse(line.name, out var parsed) && (parsed < minBeat || parsed > maxBeat))
-            .ToList();
+                        .Where(line => float.TryParse(line.name, out var parsed) && (parsed < minBeat || parsed > maxBeat))
+                        .ToList();
 
         foreach (var line in toDespawn)
         {

@@ -9,7 +9,7 @@ public class BpmConverter : MonoBehaviour
     
     [AwakeInject] private MapLoader _mapLoader;
     
-    [AwakeInject] private ReadMapInfo _readMapInfo;
+    [AwakeInject] private MapInfoLoader _mapInfoLoader;
 
     private void Awake()
     {
@@ -20,7 +20,7 @@ public class BpmConverter : MonoBehaviour
     {
         var bpmChanges = _mapLoader.Beatmap.BpmEvents;
         var position = 0f;
-        var previousBpm = _readMapInfo.info._beatsPerMinute;
+        var previousBpm = _mapInfoLoader.Info.BeatsPerMinute;
         var previousBeat = 0f;
 
         foreach (var bpmEvent in bpmChanges)
@@ -92,7 +92,7 @@ public class BpmConverter : MonoBehaviour
             return previousBpmChange.Multiplier;
         }
 
-        return _readMapInfo.info._beatsPerMinute;
+        return _mapInfoLoader.Info.BeatsPerMinute;
     }
     
     public float GetBeatFromRealTime(float realTime)
@@ -132,7 +132,7 @@ public class BpmConverter : MonoBehaviour
         var bpmEvents = _mapLoader.Beatmap.BpmEvents;
         var time = 0f;
 
-        var currentBpm = _readMapInfo.info._beatsPerMinute;
+        var currentBpm = _mapInfoLoader.Info.BeatsPerMinute;
         var lastBeat = 0f;
 
         foreach (var bpmEvent in bpmEvents)

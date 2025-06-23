@@ -32,6 +32,8 @@ public class MapObjects : MonoBehaviour
 
     public void SpawnNote(ColorNote note, float editorScale)
     {
+        Debug.Log("Spawning note: " + note);
+        
         if (_notePrefab == null)
         {
             Debug.Log("Note prefab is not assigned in MapObjects.");

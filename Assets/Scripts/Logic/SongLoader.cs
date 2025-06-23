@@ -5,31 +5,33 @@ using UnityEngine.Networking;
 using VContainer;
 using VContainer.Unity;
 
-
 public class SongLoader : MonoBehaviour
 {
-    [Inject] private readonly LifetimeScope _scope;
-    
-    [AwakeInject] private readonly MappingConfig _mappingConfig;
-    
-    [AwakeInject] private readonly AudioConfig _audioConfig;
-    
-    [AwakeInject] private ConfigLoader _configLoader;
-    
-    [AwakeInject] private readonly ReadMapInfo _readMapInfo;
-    
-    
+    [Inject]
+    private readonly LifetimeScope _scope;
+
+    [AwakeInject]
+    private readonly MappingConfig _mappingConfig;
+
+    [AwakeInject]
+    private readonly AudioConfig _audioConfig;
+
+    [AwakeInject]
+    private ConfigLoader _configLoader;
+
+    [AwakeInject]
+    private readonly MapInfoLoader _mapInfoLoader;
+
     public AudioSource audioSource;
     public float songSpeed;
-    private bool check;
-    public bool dontLoadAudio;
+    private bool _check;
     public float audioDelay;
-    
+
     private void Awake()
     {
         AwakeInjector.InjectInto(this, _scope);
     }
-    
+
     private void FixedUpdate()
     {
         foreach (var config in _configLoader.GetAll())
@@ -41,14 +43,14 @@ public class SongLoader : MonoBehaviour
             }
         }
     }
-    
+
     void Start()
     {
         SetAudioClip(audioSource);
-            
+
         audioSource.volume = _audioConfig.SongVolume;
         songSpeed = _mappingConfig.SongSpeed / 100f;
-        
+
         SetAudioClip(audioSource);
         StopSong();
     }
@@ -59,67 +61,64 @@ public class SongLoader : MonoBehaviour
         songSpeed = _mappingConfig.SongSpeed / 100f;
     }
 
-
-    public void SetAudioClip(AudioSource source)
+    private void SetAudioClip(AudioSource source)
     {
-        var songPath = _readMapInfo.folderPath + "\\" + _readMapInfo.info._songFilename;
-        Debug.Log(songPath);
+        var songPath = $"{_mapInfoLoader.folderPath}\\{_mapInfoLoader.Info.SongFilename}";
         StartCoroutine(LoadAudioClip(songPath, source, GetAudioTypeFromExtension(songPath)));
     }
 
-    public AudioType GetAudioTypeFromExtension(string path)
+    private AudioType GetAudioTypeFromExtension(string path)
     {
-        string extension = System.IO.Path.GetExtension(path).ToLower();
-        switch (extension)
-        {
-            case ".ogg":
-                return AudioType.OGGVORBIS;
-            case ".egg":
-                return AudioType.OGGVORBIS;
-            case ".wav":
-                return AudioType.WAV;
-            default:
-                return AudioType.UNKNOWN;
-        }
+        string extension = Path.GetExtension(path).ToLower();
+
+        return extension switch
+               {
+                   ".ogg" => AudioType.OGGVORBIS,
+                   ".egg" => AudioType.OGGVORBIS,
+                   ".wav" => AudioType.WAV,
+                   _      => AudioType.UNKNOWN
+               };
     }
 
-    public IEnumerator LoadAudioClip(string path, AudioSource src, AudioType audioType)
+    private IEnumerator LoadAudioClip(string path, AudioSource src, AudioType audioType)
     {
         // Ensure the file path is in the correct format
         string formattedPath = path.Replace("\\", "/"); // Replace backslashes with forward slashes
         string escapedPath = UnityWebRequest.EscapeURL(formattedPath);
         string url = "file:///" + escapedPath;
 
-        using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(url, audioType))
+        using UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(url, audioType);
+
+        yield return www.SendWebRequest();
+
+        if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
         {
-            yield return www.SendWebRequest();
-
-            if (www.result == UnityWebRequest.Result.ConnectionError || www.result == UnityWebRequest.Result.ProtocolError)
-            {
-                Debug.LogError("Error loading audio: " + www.error);
-            }
-            else
-            {
-                AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
-                src.clip = clip;
-
-                // timeInSeconds = src.clip.length;
-
-                ApplySongSpeed(); // Apply speed settings once the audio is loaded
-            }
+            Debug.LogError("Error loading audio: " + www.error);
         }
+        else
+        {
+            AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
+            src.clip = clip;
+
+            // timeInSeconds = src.clip.length;
+
+            ApplySongSpeed(); // Apply speed settings once the audio is loaded
+        }
+
     }
 
     public void PlaySong(float offset)
     {
         if (audioSource.clip)
         {
-            if (offset >= 0 && offset <= audioSource.clip.length)
+            if (!(offset >= 0) || !(offset <= audioSource.clip.length))
             {
-                audioSource.time = offset + audioDelay;
-                audioSource.Play();
-                audioSource.pitch = songSpeed; // Set the playback speed
+                return;
             }
+
+            audioSource.time = offset + audioDelay;
+            audioSource.Play();
+            audioSource.pitch = songSpeed; // Set the playback speed
         }
         else
         {
@@ -145,10 +144,12 @@ public class SongLoader : MonoBehaviour
     private void ApplySongSpeed()
     {
         audioSource.pitch = songSpeed; // Update the pitch to match the new speed
-        if (audioSource.isPlaying)
+        if (!audioSource.isPlaying)
         {
-            audioSource.Stop();
-            audioSource.Play();
+            return;
         }
+
+        audioSource.Stop();
+        audioSource.Play();
     }
 }
