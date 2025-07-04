@@ -40,6 +40,7 @@ public class MapHandler : MonoBehaviour
     public int precision;
 
     private float EditorScale => _mappingConfig.EditorScale;
+
     private float SpawnOffset => _mappingConfig.SpawnOffset;
 
     private readonly List<ColorNote> _spawnedNotes = new();
@@ -98,7 +99,10 @@ public class MapHandler : MonoBehaviour
             }
             else if (!isPlaying)
             {
-                CurrentBeat.Value--;
+                if (CurrentBeat.Value - 1 >= 0)
+                {
+                    CurrentBeat.Value--;
+                }
             }
         }
 
@@ -124,7 +128,7 @@ public class MapHandler : MonoBehaviour
             return;
         }
         // CurrentBeat.Value += _bpmConverter.GetBpmAtBeat(CurrentBeat) / 60f * refreshInterval;
-        
+
         var currentTime = _bpmConverter.GetRealTimeFromBeat(CurrentBeat.Value);
         var increasedTime = currentTime + refreshInterval;
         var updatedBeat = _bpmConverter.GetBeatFromRealTime(increasedTime);
@@ -204,16 +208,16 @@ public class MapHandler : MonoBehaviour
     {
         // Despawn objects out of range
         var notesToDespawn = _spawnedNotes
-                             .Where(note => note.Beat <= minBeat || note.Beat >= maxBeat)
-                             .ToList();
+            .Where(note => note.Beat <= minBeat || note.Beat >= maxBeat)
+            .ToList();
 
         var bombsToDespawn = _spawnedBombs
-                             .Where(bomb => bomb.Beat <= minBeat || bomb.Beat >= maxBeat)
-                             .ToList();
+            .Where(bomb => bomb.Beat <= minBeat || bomb.Beat >= maxBeat)
+            .ToList();
 
         var obstaclesToDespawn = _spawnedObstacles
-                                 .Where(obstacle => obstacle.Beat + obstacle.Duration <= minBeat || obstacle.Beat >= maxBeat)
-                                 .ToList();
+            .Where(obstacle => obstacle.Beat + obstacle.Duration <= minBeat || obstacle.Beat >= maxBeat)
+            .ToList();
 
         foreach (var note in notesToDespawn)
         {
@@ -238,13 +242,13 @@ public class MapHandler : MonoBehaviour
     {
         // Spawn notes in range that aren't already spawned
         var notesToSpawn = _beatmap.ColorNotes
-                                   .Where(note => note.Beat >= minBeat && note.Beat < maxBeat && !_spawnedNotes.Contains(note));
+            .Where(note => note.Beat >= minBeat && note.Beat < maxBeat && !_spawnedNotes.Contains(note));
 
         var bombsToSpawn = _beatmap.BombNotes
-                                   .Where(bomb => bomb.Beat >= minBeat && bomb.Beat < maxBeat && !_spawnedBombs.Contains(bomb));
+            .Where(bomb => bomb.Beat >= minBeat && bomb.Beat < maxBeat && !_spawnedBombs.Contains(bomb));
 
         var obstaclesToSpawn = _beatmap.Obstacles
-                                       .Where(obstacle => obstacle.Beat + obstacle.Duration >= minBeat && obstacle.Beat < maxBeat && !_spawnedObstacles.Contains(obstacle));
+            .Where(obstacle => obstacle.Beat + obstacle.Duration >= minBeat && obstacle.Beat < maxBeat && !_spawnedObstacles.Contains(obstacle));
 
         foreach (var note in notesToSpawn)
         {

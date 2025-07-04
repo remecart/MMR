@@ -439,7 +439,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58a73fa801fb33d4886b861d53529cef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  saberDirectoryPath: C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\CustomSabers
+  saberDirectoryPath: A:\BS Version Archive\BSManager\BSInstances\1.38.0\CustomSabers
   currentSaberIndex: 2
   currentSaberName: '!Sk- StreamBeans'
   leftHandParent: {fileID: 327180358}
@@ -761,7 +761,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 649e9e68528c9a74181fcfcf2fc8755f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  folderPath: C:\Users\Remec\BSManager\BSInstances\1.39.1 (1)\Beat Saber_Data\CustomWIPLevels\Stupid
+  folderPath: A:\BS Version Archive\BSManager\BSInstances\1.29.1\Beat Saber_Data\CustomWIPLevels\4703a
+    (WYNEHOUSE - fakechi)
 --- !u!1 &327180357
 GameObject:
   m_ObjectHideFlags: 0
@@ -867,6 +868,51 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 327180357}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &329003054
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 329003055}
+  - component: {fileID: 329003056}
+  m_Layer: 0
+  m_Name: MapPlacementHandler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &329003055
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 329003054}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1160224730}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &329003056
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 329003054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51ba77104cf94820a7216788300178bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _meshCollider: {fileID: 1746385174}
 --- !u!1 &465239627
 GameObject:
   m_ObjectHideFlags: 0
@@ -1198,7 +1244,7 @@ Transform:
   m_GameObject: {fileID: 935059595}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -100000, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1413,6 +1459,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 329003055}
   - {fileID: 301800311}
   - {fileID: 3623378933804613504}
   - {fileID: 217859883}
@@ -1686,7 +1733,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1746385172}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -1936,6 +1983,7 @@ MonoBehaviour:
   - {fileID: 217859882}
   - {fileID: 561505698}
   _mapLoader: {fileID: 9126445719317506567}
+  _mapPlacementHandler: {fileID: 329003056}
   _mapObjects: {fileID: 281471560}
   _mapInfoLoader: {fileID: 301800312}
   _bpmConverter: {fileID: 1160224731}

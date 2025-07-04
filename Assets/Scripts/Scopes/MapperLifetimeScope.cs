@@ -9,6 +9,9 @@ public class MapperLifetimeScope : LifetimeScope
     private MapLoader _mapLoader;
 
     [SerializeField]
+    private MapPlacementHandler _mapPlacementHandler;
+
+    [SerializeField]
     private MapObjects _mapObjects;
 
     [FormerlySerializedAs("mapInfoLoader")]
@@ -33,5 +36,6 @@ public class MapperLifetimeScope : LifetimeScope
         builder.RegisterInstance(_mapObjects);
         builder.RegisterInstance(_bpmConverter);
         builder.RegisterInstance(_songLoader);
+        builder.RegisterInstance(_mapPlacementHandler);
     }
 }
